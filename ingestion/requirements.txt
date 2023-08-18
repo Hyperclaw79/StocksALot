@@ -1,0 +1,2 @@
+aiohttp==3.8.5
+aio_pika==9.2.2

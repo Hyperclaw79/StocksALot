@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-server-deployment
+  labels:
+    app: db-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-server
+  template:
+    metadata:
+      labels:
+        app: db-server
+    spec:
+      imagePullSecrets:
+        - name: ghcr
+      containers:
+      - name: db-server
+        image: "ghcr.io/hyperclaw79/db_server:latest"
+        imagePullPolicy: "IfNotPresent"
+        envFrom:
+          - secretRef:
+              name: db-server-secrets
+        env:
+          - name: DATABASE_USER
+            valueFrom:
+              configMapKeyRef:
+                name: db-server-config
+                key: DATABASE_USER
+          - name: DATABASE_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: db-server-config
+                key: DATABASE_NAME
+          - name: DATABASE_HOST
+            value: "database-service"
+          - name: RABBITMQ_HOST
+            value: "rabbitmq-service"
+          - name: RABBITMQ_USER
+            valueFrom:
+              configMapKeyRef:
+                name: db-server-config
+                key: RABBITMQ_USER
+        ports:
+          - containerPort: 5000
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.25"
+            memory: "256Mi"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-server-service
+spec:
+  selector:
+    app: db-server
+  type: LoadBalancer
+  ports:
+    - name: external
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+    - name: internal
+      protocol: TCP
+      port: 5000
+      targetPort: 5000

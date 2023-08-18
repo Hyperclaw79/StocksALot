@@ -1,0 +1,85 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ingestion-cronjob-a
+  labels:
+    app: ingestion
+    version: a
+spec:
+  schedule: "0 */2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+            - name: ghcr
+          containers:
+          - name: ingestion
+            image: "ghcr.io/hyperclaw79/ingestion:latest"
+            imagePullPolicy: "IfNotPresent"
+            env:
+              - name: DB_SERVER_HOST
+                value: "db-server-service"
+              - name: RABBITMQ_HOST
+                value: "rabbitmq-service"
+              - name: RABBITMQ_USER
+                valueFrom:
+                  configMapKeyRef:
+                    name: ingestion-config
+                    key: RABBITMQ_USER
+              - name: RABBITMQ_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: ingestion-secrets
+                    key: RABBITMQ_PASSWORD
+              - name: TWELVEDATA_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ingestion-secrets
+                    key: TWELVEDATA_API_KEY_1
+          restartPolicy: Never
+  concurrencyPolicy: Forbid
+
+---
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ingestion-cronjob-b
+  labels:
+    app: ingestion
+    version: b
+spec:
+  schedule: "0 1/2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+            - name: ghcr
+          containers:
+          - name: ingestion
+            image: "ghcr.io/hyperclaw79/ingestion:latest"
+            imagePullPolicy: "IfNotPresent"
+            env:
+              - name: DB_SERVER_HOST
+                value: "db-server-service"
+              - name: RABBITMQ_HOST
+                value: "rabbitmq-service"
+              - name: RABBITMQ_USER
+                valueFrom:
+                  configMapKeyRef:
+                    name: ingestion-config
+                    key: RABBITMQ_USER
+              - name: RABBITMQ_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: ingestion-secrets
+                    key: RABBITMQ_PASSWORD
+              - name: TWELVEDATA_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ingestion-secrets
+                    key: TWELVEDATA_API_KEY_2
+          restartPolicy: Never
+  concurrencyPolicy: Forbid

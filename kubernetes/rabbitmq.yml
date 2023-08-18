@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq-statefulset
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  serviceName: rabbitmq-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:alpine
+        imagePullPolicy: "IfNotPresent"
+        envFrom:
+          - secretRef:
+              name: rabbitmq-secrets
+        env:
+          - name: RABBITMQ_DEFAULT_USER
+            valueFrom:
+              configMapKeyRef:
+                name: rabbitmq-config
+                key: RABBITMQ_DEFAULT_USER
+        ports:
+          - containerPort: 5672
+        volumeMounts:
+          - name: rabbitmq-data
+            mountPath: /var/lib/rabbitmq/
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "256Mi"
+          requests:
+            cpu: "0.25"
+            memory: "128Mi"
+      volumes:
+        - name: rabbitmq-data
+          persistentVolumeClaim:
+            claimName: rabbitmq-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+spec:
+  selector:
+    app: rabbitmq
+  type: LoadBalancer
+  ports:
+    - name: external
+      protocol: TCP
+      port: 15672
+      targetPort: 15672
+    - name: internal
+      protocol: TCP
+      port: 5672
+      targetPort: 5672
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-pvc
+spec:
+  resources:
+    requests:
+      storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce

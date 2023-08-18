@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: database-statefulset
+  labels:
+    app: database
+spec:
+  replicas: 1
+  serviceName: database-service
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: database
+        image: postgres:latest
+        imagePullPolicy: "IfNotPresent"
+        envFrom:
+          - secretRef:
+              name: db-secrets
+        env:
+          - name: DB_USER
+            valueFrom:
+              configMapKeyRef:
+                name: db-config
+                key: DATABASE_USER
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: db-config
+                key: DATABASE_NAME
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+          - name: postgres-data
+            mountPath: /var/lib/postgresql/datas
+          - name: init-script
+            mountPath: /docker-entrypoint-initdb.d
+        resources:
+          limits:
+            cpu: "0.75"
+            memory: "512Mi"
+          requests:
+            cpu: "0.5"
+            memory: "256Mi"
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+        - name: init-script
+          configMap:
+            name: init-script-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-service
+spec:
+  selector:
+    app: database
+  type: ClusterIP
+  ports:
+    - name: internal
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  resources:
+    requests:
+      storage: 500Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
