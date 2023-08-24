@@ -2,3 +2,6 @@ fastapi
 psycopg[binary]
 uvicorn[standard]
 aio_pika==9.2.2
+python-jose[cryptography]
+passlib[bcrypt]
+kubernetes

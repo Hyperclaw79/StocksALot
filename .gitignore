@@ -26,8 +26,8 @@ build/
 venv/
 .venv/
 .secrets/
-kubernetes/configmaps
-kubernetes/secrets
+k8s/configmaps
+k8s/secrets
 rabbitmq.conf
 
 # Moved on to Kubernetes

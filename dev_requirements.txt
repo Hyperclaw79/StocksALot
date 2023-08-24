@@ -8,3 +8,5 @@ aiohttp==3.8.5
 aio_pika==9.2.2
 psycopg[binary]
 uvicorn[standard]
+python-jose[cryptography]
+passlib[bcrypt]

@@ -1,4 +1,4 @@
-# 📈 Stocks Tracker
+# 📈 StocksALot
 <table>
   <tr>
     <td>
@@ -53,7 +53,7 @@
 
 
 ## Overview
-The Stocks Tracker project is a small PoC showcasing the extraction, processing, and storage of OHLC (Open, High, Low, Close) data for the top 50 US stocks. The system leverages microservices architecture, containerization with docker, container orchestration through Kubernetes, and message queuing for seamless operation.
+StocksALot is a small PoC showcasing the extraction, processing, and storage of OHLC (Open, High, Low, Close) data for the top 50 US stocks. The system leverages microservices architecture, containerization with docker, container orchestration through Kubernetes, and message queuing for seamless operation.
 
 ## 📐 High Level System Design
 
@@ -65,39 +65,105 @@ The PostgreSQL Database container stores the OHLC data received from the FastAPI
 
 ### 3. Database Server API (DB Server)
 The FastAPI Microservice (DB Server) is responsible for handling incoming requests and interacting with the PostgreSQL Database. It provides an external interface via REST API to read and write OHLC data. The microservice communicates with the PostgreSQL Database container to store and retrieve data.
+The API is exposed to authenticated users for programmatic access as well as to the Frontend component for displaying the data to the end user.
 
 ### 4. Message Queue (RabbitMQ)
 The RabbitMQ message queue acts as a decoupling mechanism between the Ingestor and the Database Server. It ensures robust and asynchronous communication. Extracted data from the Ingestor is transmitted through the queue to the Database Server for storage.
 
+### 5. Frontend (Frontend)
+The Frontend component is responsible for providing a user interface to the end user. It communicates with the Database Server to fetch the required data and displays it to the user.
+
+### 6. Load Balancer (DB Server Service)
+The Load Balancer component is responsible for load balancing incoming requests to the DB server. It supports requests from the Frontend as well as external API Users. Although the diagrams shows it as a separate component, it is technically part of the data layer.
+
+### 7. Cache (Redis)
+A Redis cache is used to store the OHLC data for faster retrieval. The Frontend component first checks the cache for the required data and if it is not present, it fetches the data from the Database Server.
+
+### 8. Users
+The Users component represents the end users of the application. They can access the Frontend component to view the OHLC data for the top 50 US stocks. They can also register for an API token to access the Database Server API for programmatic access to the data.
+
 ```mermaid
   graph LR
-    subgraph A[Ingestion]
-        direction RL
-        style A fill:#1f2020,stroke:#81B1DB,stroke-width:2px,fontSize:20px
-        subgraph Ingestor
-            F(fa:fa-gear Cronjob)
-            G(fa:fa-gear Cronjob)
-        end
-        F --->|Fetch Data| E[External APIs fa:fa-globe]
-        G --->|Fetch Data| E
-    end
-    
-    subgraph data[Data Layer]
-        direction TB
-        style data fontSize:20
-        C[DB Server] --> D[(Database)]
-    end
-
-    A -....->|Optional direct access| data
-    A --->|Publish| B[[RABBITMQ]] ---> |Consume| data
-
+    K((Kubernetes\nfa:fa-dharmachakra))
+    K -.-x I
+    K -.-x data
+    K -.-x R
+    K -.-x F
+    K -.-x LB    
+        
     subgraph K8s[Kubernetes Cluster]
-        style K8s fill:none, fontSize:20px
-        K((Kubernetes\nfa:fa-dharmachakra))
-        K --x A
-        K --x B
-        K --x data
+      style K8s fill:none
+
+      subgraph Internal[Backend Layer]
+        style Internal fill:#111,stroke:#81B1DB
+
+        subgraph I[Ingestion]
+            direction RL
+            style I fill:#1f2020,stroke:#81B1DB,stroke-width:2px
+
+            subgraph Ingestor
+                C1(fa:fa-gear Cronjob)
+                C2(fa:fa-gear Cronjob)
+            end
+
+            C1 --->|Fetch Data| E1[External APIs fa:fa-globe]
+            C1 --->|Fetch Data| E2[External APIs fa:fa-globe]
+            C2 --->|Fetch Data| E1
+            C2 --->|Fetch Data| E2
+        end
+        
+        subgraph data[Data Layer]
+            direction TB
+            style data fill:#1f2020,stroke:#81B1DB,stroke-width:2px
+
+            DS[DB Server\nfa:fa-server] ==> DB[(Database\nfa:fa-database)]
+        end
+
+        I -....->|Optional direct access| data
+        I --->|Publish| R[[RABBITMQ]] ---> |Consume| data
+        LB{{Load Balancer\nfa:fa-dumbbell}} -->|Fetch Data| data
+      end
+
+        subgraph FE[Frontend Layer]
+            style FE fill:#111,stroke:#81B1DB
+            F <-.-> |"Register\n{TOKEN}"| data
+            F[fa:fa-desktop Frontend] --> Cache{{Cache fa:fa-book}} --> |Fetch Data| data
+        end
+        K -.-x Cache
     end
+
+    subgraph Users
+        style Users fill:#111
+
+        NU[fa:fa-user Normal Users] --->|Page View| F
+        NU <-.-> |"Register\n{TOKEN}"| F
+        NU ~~~ Ext[API Acess fa:fa-wifi]
+        Ext <----> |"Request\n{TOKEN}"| LB
+    end
+
+%% Change link colors
+linkStyle 0 stroke:#326CE5
+linkStyle 1 stroke:#326CE5
+linkStyle 2 stroke:#326CE5
+linkStyle 3 stroke:#326CE5
+linkStyle 4 stroke:#326CE5
+linkStyle 5 stroke:#000
+linkStyle 6 stroke:#000
+linkStyle 7 stroke:#000
+linkStyle 8 stroke:#000
+linkStyle 9 stroke:#27AE60
+linkStyle 10 stroke:#E67E22
+linkStyle 11 stroke:#E67E22
+linkStyle 12 stroke:#E67E22
+linkStyle 13 stroke:#C0392B
+linkStyle 14 stroke:#C0392B
+linkStyle 15 stroke:#16A085
+linkStyle 16 stroke:#16A085
+linkStyle 17 stroke:#326CEF
+linkStyle 18 stroke:#16A085
+linkStyle 19 stroke:#C0392B
+linkStyle 20 stroke:#C0392B
+linkStyle 21 stroke:#C0392B
 ```
 
 ## 🚀 Local Setup Instructions
@@ -193,7 +259,7 @@ rabbitmq-secrets         Opaque      1      1m
 - Now that you have setup the prerequisites, you can run the application.
 - Navigate to the root directory of the project and run the following command:
 ```bash
-kubectl apply -f kubernetes
+kubectl apply -f k8s
 ```
 - This will create the required deployments, services, and cronjobs in the Kubernetes cluster.
 - You can verify that the pods are up and running by running the following command:
@@ -238,7 +304,7 @@ kubectl exec -it database-statefulset-0 -- psql -U postgres -d stocks -c "SELECT
 (5 rows)
 ```
 
-### 🎉 And that's it! You have successfully setup the Stocks Tracker application in your local Kubernetes cluster.
+### 🎉 And that's it! You have successfully setup StocksALot in your local Kubernetes cluster.
 
 ## 👥 Contributing
 This project is a simple PoC and is not actively maintained.\

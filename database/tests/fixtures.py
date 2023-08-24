@@ -1,7 +1,9 @@
 # pylint: skip-file
+from datetime import datetime
 import re
 from unittest.mock import patch
 
+from passlib.context import CryptContext
 import psycopg
 from psycopg.pq import ExecStatus
 from psycopg.sql import Composed, Identifier, SQL
@@ -64,7 +66,7 @@ def db_conn() -> type[DatabaseConnection]:
                     ],
                     'ohlc': [
                         {
-                            "datetime": "2021-01-01 09:30:00",
+                            "datetime": datetime(2021, 1, 1, 9, 30, 0),
                             "timestamp": 1609459200,
                             "ticker": "AAPL",
                             "name": "Apple Inc.",
@@ -76,7 +78,7 @@ def db_conn() -> type[DatabaseConnection]:
                             "source": "yahoo"
                         },
                         {
-                            "datetime": "2021-01-01 09:30:00",
+                            "datetime": datetime(2021, 1, 1, 9, 30, 0),
                             "timestamp": 1609459200,
                             "ticker": "MSFT",
                             "name": "Microsoft Corporation",
@@ -87,6 +89,16 @@ def db_conn() -> type[DatabaseConnection]:
                             "volume": 100,
                             "source": "yahoo"
                         },
+                    ],
+                    'users': [
+                        {
+                            "username": "test",
+                            "password": CryptContext(
+                                schemes=["bcrypt"],
+                                deprecated="auto"
+                            ).hash("test"),
+                            "email": "test@test.com"
+                        }
                     ]
                 }
                 self.result_cache = []

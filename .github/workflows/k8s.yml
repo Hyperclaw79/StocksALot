@@ -26,7 +26,8 @@ jobs:
                     kubectl create configmap db-server-config \
                         --from-literal=DATABASE_USER=${{ vars.DATABASE_USER }} \
                         --from-literal=DATABASE_NAME=${{ vars.DATABASE_NAME }} \
-                        --from-literal=RABBITMQ_USER=${{ vars.RABBITMQ_USER }}
+                        --from-literal=RABBITMQ_USER=${{ vars.RABBITMQ_USER }} \
+                        --from-literal=API_TOKEN_EXPIRY_DAYS=${{ vars.API_TOKEN_EXPIRY_DAYS }}
                     kubectl create configmap ingestion-config \
                         --from-literal=RABBITMQ_USER=${{ vars.RABBITMQ_USER }}
                     kubectl create configmap init-script-config \
@@ -38,7 +39,8 @@ jobs:
                         --from-literal=POSTGRES_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
                     kubectl create secret generic db-server-secrets \
                         --from-literal=DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
-                        --from-literal=RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}
+                        --from-literal=RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }} \
+                        --from-literal=API_TOKEN_SECRET=${{ secrets.API_TOKEN_SECRET }}
                     kubectl create secret generic ingestion-secrets \
                         --from-literal=RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }} \
                         --from-literal=TWELVEDATA_API_KEY_1=${{ secrets.TWELVEDATA_API_KEY_1 }} \
@@ -53,7 +55,7 @@ jobs:
                         --docker-email=${{ github.event.pusher.email }}
 
             - name: Apply Kubernetes Manifests
-              run: kubectl apply -f kubernetes
+              run: kubectl apply -f k8s
 
             - name: Start Cron Job Manually
               run: kubectl create job --from=cronjob/ingestion-cronjob-a ingestion-job

@@ -79,6 +79,14 @@ psql -v ON_ERROR_STOP=1 <<-EOSQL
         FOREIGN KEY (ticker) REFERENCES tickers(ticker)
     );
 
+    CREATE TABLE users (
+        id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+        username VARCHAR(50) NOT NULL,
+        password VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     GRANT ALL PRIVILEGES
         ON ALL TABLES
         IN SCHEMA public

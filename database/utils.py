@@ -1,5 +1,6 @@
 """A module containing utility functions."""
 
+from functools import wraps
 import logging
 
 
@@ -30,3 +31,14 @@ def logger_factory(name: str) -> CustomLogger:
     handler.setFormatter(logging.Formatter('[%(levelname)s] [%(name)s] %(message)s'))
     logger.addHandler(handler)
     return logger
+
+
+def ensure_session(func: callable):
+    """Ensure that the connection is open."""
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        """Wrapper function."""
+        if args[0].session is None:
+            await args[0].connect()
+        return await func(*args, **kwargs)
+    return wrapper

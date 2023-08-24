@@ -1,7 +1,6 @@
 """Creates the Database Connection and Exposes it."""
 from __future__ import annotations
 import asyncio
-from functools import wraps
 import sys
 from typing import TYPE_CHECKING
 
@@ -10,24 +9,13 @@ from psycopg.rows import dict_row
 from psycopg.pq import ExecStatus
 
 from base_connector import BaseConnector
-from utils import logger_factory
+from utils import logger_factory, ensure_session
 
 if TYPE_CHECKING:
     from psycopg.sql import Composed
 
 
 logger = logger_factory(__name__)
-
-
-def ensure_session(func: callable):
-    """Ensure that the connection is open."""
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        """Wrapper function."""
-        if args[0].session is None:
-            await args[0].connect()
-        return await func(*args, **kwargs)
-    return wrapper
 
 
 # pylint: disable=too-many-arguments

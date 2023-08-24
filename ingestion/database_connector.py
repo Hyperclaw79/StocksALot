@@ -26,7 +26,10 @@ class DatabaseConnector(BaseConnector):
 
     async def connect(self):
         """Connects to the database."""
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(headers={
+            'X-Internal-Client': 'Ingestor',
+            'X-Internal-Token': self._get_k8s_token()
+        })
 
     @ensure_session
     async def get_ticker(self, ticker: str):
@@ -61,3 +64,15 @@ class DatabaseConnector(BaseConnector):
         """Posts OHLC data to the database."""
         async with self.session.post(f"{self.base_url}/ohlc", json=ohlc) as resp:
             return await resp.json()
+
+    @staticmethod
+    def _get_k8s_token():
+        """Gets the kubernetes token."""
+        try:
+            with open(
+                "/var/run/secrets/kubernetes.io/serviceaccount/token",
+                encoding="utf-8"
+            ) as token_file:
+                return token_file.read()
+        except FileNotFoundError:
+            return None

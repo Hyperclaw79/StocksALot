@@ -16,6 +16,7 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr
+      serviceAccountName: db-server-service-account
       containers:
       - name: db-server
         image: "ghcr.io/hyperclaw79/db_server:latest"
@@ -43,6 +44,11 @@ spec:
               configMapKeyRef:
                 name: db-server-config
                 key: RABBITMQ_USER
+          - name: API_TOKEN_EXPIRY_DAYS
+            valueFrom:
+              configMapKeyRef:
+                name: db-server-config
+                key: API_TOKEN_EXPIRY_DAYS
         ports:
           - containerPort: 5000
         resources:

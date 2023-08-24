@@ -1,4 +1,4 @@
-# This workflow builds the docker images and deploys them on a local kubernetes cluster
+# This workflow builds the docker images and pushes them to GHCR.
 name: Build
 
 on:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-to-kubernetes:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
