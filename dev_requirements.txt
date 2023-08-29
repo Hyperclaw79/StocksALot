@@ -10,3 +10,7 @@ psycopg[binary]
 uvicorn[standard]
 python-jose[cryptography]
 passlib[bcrypt]
+kubernetes
+openai
+python-multipart
+email-validator

@@ -15,7 +15,7 @@ spec:
             - name: ghcr
           containers:
           - name: ingestion
-            image: "ghcr.io/hyperclaw79/ingestion:latest"
+            image: "ghcr.io/hyperclaw79/stocksalot-ingestion:latest"
             imagePullPolicy: "IfNotPresent"
             env:
               - name: DB_SERVER_HOST
@@ -37,6 +37,11 @@ spec:
                   secretKeyRef:
                     name: ingestion-secrets
                     key: TWELVEDATA_API_KEY_1
+              - name: FINNHUB_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ingestion-secrets
+                    key: FINNHUB_API_KEY
           restartPolicy: Never
   concurrencyPolicy: Forbid
 
@@ -59,7 +64,7 @@ spec:
             - name: ghcr
           containers:
           - name: ingestion
-            image: "ghcr.io/hyperclaw79/ingestion:latest"
+            image: "ghcr.io/hyperclaw79/stocksalot-ingestion:latest"
             imagePullPolicy: "IfNotPresent"
             env:
               - name: DB_SERVER_HOST
@@ -81,5 +86,10 @@ spec:
                   secretKeyRef:
                     name: ingestion-secrets
                     key: TWELVEDATA_API_KEY_2
+              - name: FINNHUB_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ingestion-secrets
+                    key: FINNHUB_API_KEY
           restartPolicy: Never
   concurrencyPolicy: Forbid

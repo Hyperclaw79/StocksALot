@@ -19,7 +19,7 @@ spec:
       serviceAccountName: db-server-service-account
       containers:
       - name: db-server
-        image: "ghcr.io/hyperclaw79/db_server:latest"
+        image: "ghcr.io/hyperclaw79/stocksalot-db-server:latest"
         imagePullPolicy: "IfNotPresent"
         envFrom:
           - secretRef:

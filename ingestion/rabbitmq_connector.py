@@ -57,3 +57,15 @@ class RabbitMQConnector(BaseConnector):
             return True
         except aio_pika.exceptions.DeliveryError:
             return False
+
+    async def __aenter__(self) -> RabbitMQConnector:
+        await super().__aenter__()
+        logger.info("Connected to RabbitMQ.")
+        return self
+
+    async def __aexit__(self, *_):
+        await super().__aexit__()
+        logger.info("Disconnected from RabbitMQ.")
+        self.session = None
+        self.channel = None
+        self.queues = []

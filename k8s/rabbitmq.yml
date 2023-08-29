@@ -54,10 +54,6 @@ spec:
     app: rabbitmq
   type: LoadBalancer
   ports:
-    - name: external
-      protocol: TCP
-      port: 15672
-      targetPort: 15672
     - name: internal
       protocol: TCP
       port: 5672

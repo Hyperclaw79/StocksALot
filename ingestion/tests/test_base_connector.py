@@ -22,7 +22,7 @@ class TestBaseConnector:
             async def connect(self):
                 self.session = mock_session
             async def disconnect(self):
-                super().disconnect()
+                await super().disconnect()
                 self.closed = False
             @ensure_session
             async def test_func(self):

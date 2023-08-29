@@ -40,11 +40,13 @@ jobs:
                     kubectl create secret generic db-server-secrets \
                         --from-literal=DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
                         --from-literal=RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }} \
-                        --from-literal=API_TOKEN_SECRET=${{ secrets.API_TOKEN_SECRET }}
+                        --from-literal=API_TOKEN_SECRET=${{ secrets.API_TOKEN_SECRET }} \
+                        --from-literal=GPT_API_KEY=${{ secrets.GPT_API_KEY }}
                     kubectl create secret generic ingestion-secrets \
                         --from-literal=RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }} \
                         --from-literal=TWELVEDATA_API_KEY_1=${{ secrets.TWELVEDATA_API_KEY_1 }} \
-                        --from-literal=TWELVEDATA_API_KEY_2=${{ secrets.TWELVEDATA_API_KEY_2 }}
+                        --from-literal=TWELVEDATA_API_KEY_2=${{ secrets.TWELVEDATA_API_KEY_2 }} \
+                        --from-literal=FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
                     kubectl create secret generic rabbitmq-secrets \
                         --from-literal=RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_PASSWORD }}
 
@@ -55,7 +57,12 @@ jobs:
                         --docker-email=${{ github.event.pusher.email }}
 
             - name: Apply Kubernetes Manifests
-              run: kubectl apply -f k8s
+              run: |
+                    kubectl apply -f k8s/database.yml
+                    kubectl apply -f k8s/rabbitmq.yml
+                    kubectl apply -f k8s/db-server.yml
+                    kubectl apply -f k8s/ingestion.yml
+                    kubectl apply -f k8s/db-server-service-account.yml
 
             - name: Start Cron Job Manually
               run: kubectl create job --from=cronjob/ingestion-cronjob-a ingestion-job

@@ -86,7 +86,7 @@ class BaseIngestor(ABC):
         Abstract method for ingesting data.
         """
 
-    async def store(self, records: list[dict[str, str | int | float]]):
+    async def store(self, records: list[dict[str, str | int | float]]) -> bool:
         """
         Store the records to the database.
         """

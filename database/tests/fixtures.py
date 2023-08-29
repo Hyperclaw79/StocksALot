@@ -1,7 +1,7 @@
 # pylint: skip-file
 from datetime import datetime
 import re
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from passlib.context import CryptContext
 import psycopg
@@ -10,6 +10,9 @@ from psycopg.sql import Composed, Identifier, SQL
 import pytest
 
 from database.dbconn import DatabaseConnection
+from database.gpt_client import GptClient
+from database.k8s_authorizer import KubernetesAPI
+from database.models import InsightsResponse
 
 
 def extract_sql(sql: Composed | SQL | Identifier | str) -> list:
@@ -39,11 +42,16 @@ def sql_to_string(sql: Composed) -> str:
 @pytest.fixture
 def db_conn() -> type[DatabaseConnection]:
     with patch('psycopg.AsyncConnection.connect') as mock_connect:
+
         class MockPGResult:
             status = ExecStatus.EMPTY_QUERY
+
+
         class MockCursor:
             def __init__(self):
-                self.table_pattern = re.compile(r"[FI][RN][OT][MO]\s{1}(\w+)\s*")
+                self.table_pattern = re.compile(
+                    r"[FIU][RNP][OTD][MOA]T?E?\s{1}(\w+)\s*"
+                )
                 self.join_pattern = re.compile(
                     r"SELECT\s+(?P<columns>.*?)\s+FROM\s+\w+\s+JOIN\s+"
                     r"(?P<foreign_table>\w+)\s+ON\s+\w+\."
@@ -99,10 +107,54 @@ def db_conn() -> type[DatabaseConnection]:
                             ).hash("test"),
                             "email": "test@test.com"
                         }
+                    ],
+                    'insights': [
+                        {
+                            "datetime": datetime(2021, 1, 1, 9, 30, 0),
+                            "message": "test insight 1",
+                            "sentiment": "neutral"
+                        },
+                        {
+                            "datetime": datetime(2021, 1, 1, 9, 30, 0),
+                            "message": "test insight 2",
+                            "sentiment": "positive"
+                        },
+                        {
+                            "datetime": datetime(2021, 1, 1, 9, 30, 0),
+                            "message": "test insight 3",
+                            "sentiment": "negative"
+                        }
+                    ],
+                    'companies': [
+                        {
+                            "ticker": "AAPL",
+                            "name": "Apple Inc.",
+                            "website": "https://www.apple.com/",
+                            "country": "United States",
+                            "logo": "https://logo.clearbit.com/apple.com",
+                            "industry": "Consumer Electronics",
+                            "exchange": "NASDAQ",
+                            "phone": "14089961010",
+                            "market_cap": 2000000000000,
+                            "num_shares": 10000000000
+                        },
+                        {
+                            "ticker": "MSFT",
+                            "name": "Microsoft Corporation",
+                            "website": "https://www.microsoft.com/",
+                            "country": "United States",
+                            "logo": "https://logo.clearbit.com/microsoft.com",
+                            "industry": "Software—Infrastructure",
+                            "exchange": "NASDAQ",
+                            "phone": "14258828080",
+                            "market_cap": 2000000000000,
+                            "num_shares": 10000000000
+                        }
                     ]
                 }
                 self.result_cache = []
                 self.pgresult = MockPGResult()
+
             async def execute(self, query, *args, **kwargs):
                 if isinstance(query, Composed):
                     query = sql_to_string(query)
@@ -113,6 +165,27 @@ def db_conn() -> type[DatabaseConnection]:
                 # Simulate INSERT queries
                 if query.startswith("INSERT INTO") and self._handle_insert(table_name, args):
                     self.data[table_name].append(dict(zip(self.data[table_name][0], args)))
+                    self.pgresult.status = ExecStatus.COMMAND_OK
+                    return True
+                # Simulate UPDATE queries
+                if query.startswith("UPDATE"):
+                    for arg, record in zip(args, self.data[table_name]):
+                        data = {
+                            record.split('=')[0].strip(): value
+                            for record, value in zip(
+                                query.split('SET')[1].split('FROM')[0].split(','),
+                                arg[0]
+                            )
+                        }
+                        if record.keys() != data.keys() or any(
+                            type(val) != type(record.get(key))
+                            for key, val in data.items()
+                        ):
+                            raise psycopg.errors.SyntaxError("Not all values are provided.")
+                        if record.get("ticker") == data.get("ticker"):
+                            record |= data
+                        else:
+                            self.data[table_name].append(data)
                     self.pgresult.status = ExecStatus.COMMAND_OK
                     return True
                 # Simulate SELECT queries
@@ -127,7 +200,7 @@ def db_conn() -> type[DatabaseConnection]:
                         self.result_cache.extend(self.data[table_name])
                         self.pgresult.status = ExecStatus.TUPLES_OK
                         return self.data[table_name]
-                    column, value = query.split("WHERE")[1].split("=")
+                    column, value = query.split('OR')[0].split("WHERE")[1].split("=")
                     column = column.strip()
                     value = args[0][0]
                     result = next(
@@ -142,6 +215,7 @@ def db_conn() -> type[DatabaseConnection]:
                     self.pgresult.status = ExecStatus.TUPLES_OK
                     return result
                 return None
+
             def _handle_join(self, match):
                 column_list = [
                     self.col_pattern.search(column.strip()).groups()
@@ -174,6 +248,7 @@ def db_conn() -> type[DatabaseConnection]:
                     )
                     for row in zip(*results)
                 ]
+
             def _handle_insert(self, table_name, args):
                 if not args:
                     raise psycopg.errors.SyntaxError("No values provided.")
@@ -208,12 +283,15 @@ def db_conn() -> type[DatabaseConnection]:
                 ):
                     raise psycopg.errors.UniqueViolation("Unique constraint violation.")
                 return True
+
             async def fetchone(self, *args, **kwargs):
                 return self.result_cache.pop(0)
+
             async def fetchall(self, *args, **kwargs):
                 cached = self.result_cache
                 self.result_cache = []
                 return cached
+
             async def executemany(self, query, *args, **kwargs):
                 self.pgresult.status = ExecStatus.EMPTY_QUERY
                 if not args:
@@ -231,10 +309,14 @@ def db_conn() -> type[DatabaseConnection]:
                     self.pgresult.status = ExecStatus.COMMAND_OK
                     return True
                 raise psycopg.errors.UndefinedTable(f"Table {table_name} does not exist.")
+
             async def __aenter__(self):
                 return self
+
             async def __aexit__(self, exc_type, exc, tb):
                 pass
+
+
         class MockConnection:
             def __init__(self):
                 self.closed = False
@@ -247,3 +329,52 @@ def db_conn() -> type[DatabaseConnection]:
                 pass
         mock_connect.return_value = MockConnection()
         yield DatabaseConnection
+
+
+@pytest.fixture
+def gpt_client_fixture() -> type[GptClient]:
+    with patch('openai.ChatCompletion') as mock_chat_completion:
+        class MockChatCompletion:
+            class MockChoice:
+                def __init__(self, message):
+                    self.message = message
+            def __init__(self, *args, **kwargs):
+                self.choices = [MockChatCompletion.MockChoice("test")]
+            @classmethod
+            async def acreate(cls, *args, **kwargs):
+                return cls(*args, **kwargs)
+            async def prompt(self, *args, **kwargs):
+                return InsightsResponse(**{
+                    "count": 1,
+                    "items": [
+                        {
+                            "datetime": "2021-01-01T09:30:00",
+                            "insights": [
+                                {
+                                    "message": "test insight 4",
+                                    "sentiment": "neutral"
+                                },
+                                {
+                                    "message": "test insight 5",
+                                    "sentiment": "positive"
+                                },
+                                {
+                                    "message": "test insight 6",
+                                    "sentiment": "negative"
+                                }
+                            ]
+                        }
+                    ]
+                })
+        mock_chat_completion.return_value = MockChatCompletion
+        yield MockChatCompletion
+
+
+@pytest.fixture
+def k8s_auth_fixture() -> type[KubernetesAPI]:
+    with patch.object(
+        KubernetesAPI,
+        'validate_token',
+        AsyncMock(return_value=True)
+    ) as mock_k8s_api:
+        yield KubernetesAPI

@@ -27,6 +27,11 @@ def logger_factory(name: str) -> CustomLogger:
     logger = CustomLogger(name)
     logger.propagate = True
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter('[%(levelname)s] [%(name)s] %(message)s'))
+    handler.setFormatter(
+        logging.Formatter(
+            '[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
+            "%Y-%m-%d %H:%M:%S"
+        )
+    )
     logger.addHandler(handler)
     return logger

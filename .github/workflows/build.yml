@@ -12,9 +12,11 @@ jobs:
       matrix:
         include:
           - microservice: ./database
-            image: ghcr.io/hyperclaw79/db_server
+            image: ghcr.io/hyperclaw79/stocksalot-db-server
           - microservice: ./ingestion
-            image: ghcr.io/hyperclaw79/ingestion
+            image: ghcr.io/hyperclaw79/stocksalot-ingestion
+          - microservice: ./frontend
+            image: ghcr.io/hyperclaw79/stocksalot-frontend
     steps:
       - name : Checkout
         uses: actions/checkout@v3

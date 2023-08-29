@@ -2,37 +2,54 @@
 <table>
   <tr>
     <td>
-      <table>
+      <table align="center">
         <tr>
-          <th style="text-align:center;">Status</th>
+          <td>
+            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/build.yml?style=for-the-badge&logo=docker&label=Build" alt="Build" />
+          </td>
+          <td>
+            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/k8s.yml?style=for-the-badge&logo=kubernetes&label=Deploy" alt="Deploy" />
+          </td>
         </tr>
         <tr>
-          <td><img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/build.yml?style=for-the-badge&logo=docker&label=Build" alt="Build" /></td>
-        </tr>
-        <tr>
-          <td><img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/k8s.yml?style=for-the-badge&logo=kubernetes&label=Deploy" alt="Deploy" /></td>
-        </tr>
-        <tr>
-          <td><img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/testing.yml?style=for-the-badge&logo=pytest&label=Tests" alt="Tests" /></td>
-        </tr>
-        <tr>
-          <td><img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/linting.yml?style=for-the-badge&logo=python&label=Linting" alt="Tests" /></td>
+          <td>
+            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/testing.yml?style=for-the-badge&logo=pytest&label=Tests" alt="Tests" />
+          </td>
+          <td>
+            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/linting.yml?style=for-the-badge&logo=python&label=Linting" alt="Tests" />
+          </td>
         </tr>
       </table>
     </td>
+  </tr>
+  <tr>
     <td>
-      <table>
+      <table align="left">
         <tr>
           <th>Component</th>
           <th>Tech Stack</th>
         </tr>
         <tr>
           <td>Ingestion</td>
-          <td><img src="https://img.shields.io/badge/python-3.11-yellow?style=for-the-badge&logo=python" alt="Python" /></td>
+          <td><img src="https://img.shields.io/badge/python-3.11-yellow?style=for-the-badge&logo=python&logoColor=yellow" alt="Python" /></td>
+        </tr>
+        <tr>
+          <td>Backend</td>
+          <td><img src="https://img.shields.io/badge/FastAPI-0.101-009688?style=for-the-badge&logo=fastAPI" alt="Python" /></td>
+        </tr>
+        <tr>
+          <td>Frontend</td>
+          <td><img src="https://img.shields.io/badge/sveltekit-1.23-ff3e00?style=for-the-badge&logo=svelte" alt="Sveltekit" /></td>
         </tr>
         <tr>
           <td>Database</td>
           <td><img src="https://img.shields.io/badge/postgresql-15.4-336791?style=for-the-badge&logo=postgresql" alt="PostgreSQL" /></td>
+        </tr>
+      </table>
+      <table align="right">
+        <tr>
+          <th>Component</th>
+          <th>Tech Stack</th>
         </tr>
         <tr>
           <td>Containerization</td>
@@ -71,7 +88,7 @@ The API is exposed to authenticated users for programmatic access as well as to 
 The RabbitMQ message queue acts as a decoupling mechanism between the Ingestor and the Database Server. It ensures robust and asynchronous communication. Extracted data from the Ingestor is transmitted through the queue to the Database Server for storage.
 
 ### 5. Frontend (Frontend)
-The Frontend component is responsible for providing a user interface to the end user. It communicates with the Database Server to fetch the required data and displays it to the user.
+Written in SvelteKit, the Frontend component is responsible for providing a user interface to the end user. It communicates with the Database Server to fetch the required data and displays it to the user. It also serves as the portal to register for an API token to access the Database Server API.
 
 ### 6. Load Balancer (DB Server Service)
 The Load Balancer component is responsible for load balancing incoming requests to the DB server. It supports requests from the Frontend as well as external API Users. Although the diagrams shows it as a separate component, it is technically part of the data layer.
@@ -127,7 +144,7 @@ The Users component represents the end users of the application. They can access
         subgraph FE[Frontend Layer]
             style FE fill:#111,stroke:#81B1DB
             F <-.-> |"Register\n{TOKEN}"| data
-            F[fa:fa-desktop Frontend] --> Cache{{Cache fa:fa-book}} --> |Fetch Data| data
+            F[fa:fa-desktop Frontend] --> Cache{{Redis fa:fa-book}} --> |Fetch Data| data
         end
         K -.-x Cache
     end
@@ -219,20 +236,22 @@ kubectl create configmap init-script-config --from-file=database/init.sql
     2. `RABBITMQ_PASSWORD`
     3. `TWELVEDATA_API_KEY_1`
     4. `TWELVEDATA_API_KEY_2`
+    5. `FINNHUB_API_KEY`
     Populate the files with the required values.
 - You can then create the Secrets by running the following commands:
 ```bash
 kubectl create secret generic db-secrets \
     --from-file=POSTGRES_PASSWORD=.secrets/DATABASE_PASSWORD
 kubectl create secret generic db-server-secrets \
-    --from-file=DATABASE_PASSWORD=.secrets/DATABASE_PASSWORD
+    --from-file=DATABASE_PASSWORD=.secrets/DATABASE_PASSWORD \
     --from-file=RABBITMQ_PASSWORD=.secrets/RABBITMQ_PASSWORD
 kubectl create secret generic rabbitmq-secrets \
     --from-file=RABBITMQ_DEFAULT_PASS=.secrets/RABBITMQ_PASSWORD
 kubectl create secret generic ingestion-secrets \
-    --from-file=TWELVEDATA_API_KEY_1=.secrets/TWELVEDATA_API_KEY_1
-    --from-file=TWELVEDATA_API_KEY_2=.secrets/TWELVEDATA_API_KEY_2
-    --from-file=RABBITMQ_PASSWORD=.secrets/RABBITMQ_PASSWORD
+    --from-file=TWELVEDATA_API_KEY_1=.secrets/TWELVEDATA_API_KEY_1 \
+    --from-file=TWELVEDATA_API_KEY_2=.secrets/TWELVEDATA_API_KEY_2 \
+    --from-file=RABBITMQ_PASSWORD=.secrets/RABBITMQ_PASSWORD \
+    --from-file=FINNHUB_API_KEY=.secrets/FINNHUB_API_KEY
 ```
 - You can verify that the ConfigMaps and Secrets have been created by running the following commands:
 ```bash
@@ -271,6 +290,7 @@ kubectl get pods
 NAME                            READY   STATUS    RESTARTS   AGE
 database-statefulset-0                  1/1     Running     0          1m
 db-server-deployment-6964784d46-chpn6   1/1     Running     0          1m
+frontend-deployment-59d7574dfb-v6khd    1/1     Running     0          1m
 ingestion-cronjob-a-28208760-8rjs6      0/1     Completed   0          1m
 ingestion-cronjob-b-28208820-5d5kg      0/1     Completed   0          1m
 rabbitmq-statefulset-0                  1/1     Running     0          1m
@@ -303,7 +323,14 @@ kubectl exec -it database-statefulset-0 -- psql -U postgres -d stocks -c "SELECT
  2023-08-18 15:30:00 | 1692388746 | META   | Meta Platforms, Inc. | 283.46 | 285.69 | 282.70 | 283.28 | 5502937 | twelvedata
 (5 rows)
 ```
-
+- Ingress for this application is configured to use the `stocksalot.com` as the host domain. \
+  You need to add the following entry to your `/etc/hosts` (or `C:/Windows/System32/drivers/etc/hosts` on Windows) file to access the application:
+```bash
+127.0.0.1 stocksalot.com api.stocksalot.com
+```
+- You can then access the application at [http://stocksalot.com](http://stocksalot.com).
+- You can access the API at [http://api.stocksalot.com](http://api.stocksalot.com/docs).
+  
 ### 🎉 And that's it! You have successfully setup StocksALot in your local Kubernetes cluster.
 
 ## 👥 Contributing
@@ -311,9 +338,11 @@ This project is a simple PoC and is not actively maintained.\
 However, if you would like to contribute, feel free to open a pull request.
 
 ### Ways to contribute
+Here are some ways in which you can contribute, in ascending order of preference:
 - [ ] Report a bug
 - [ ] Fix an existing bug
 - [ ] Improve test coverage
 - [ ] Improve documentation
-- [ ] Refactor code
+- [ ] Enhance Frontend
 - [ ] Add new features
+- [ ] Refactor code

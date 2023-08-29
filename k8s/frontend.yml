@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      imagePullSecrets:
+        - name: ghcr
+      containers:
+      - name: frontend
+        image: "ghcr.io/hyperclaw79/stocksalot-frontend:latest"
+        imagePullPolicy: "IfNotPresent"
+        env:
+          - name: DB_SERVER_HOST
+            value: "db-server-service"
+        ports:
+          - containerPort: 4173
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.25"
+            memory: "256Mi"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  type: LoadBalancer
+  ports:
+    - name: external
+      protocol: TCP
+      port: 80
+      targetPort: 4173

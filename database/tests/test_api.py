@@ -7,17 +7,20 @@ from jose import jwt
 from fastapi.testclient import TestClient
 import pytest
 
-from .fixtures import db_conn
+from .fixtures import db_conn, gpt_client_fixture, k8s_auth_fixture
 
 
 @pytest.fixture
-def client(db_conn):
+def client(db_conn, gpt_client_fixture, k8s_auth_fixture):
     """Create a test client for the FastAPI app."""
-    with mock.patch("dbconn.DatabaseConnection", db_conn):
-            from main import app, get_username
+    with (
+        mock.patch("dbconn.DatabaseConnection", db_conn) as _,
+        mock.patch("gpt_client.GptClient", gpt_client_fixture) as _,
+        mock.patch("k8s_authorizer.KubernetesAPI", k8s_auth_fixture) as _,
+    ):
+        from main import app
 
-            app.dependency_overrides[get_username] = lambda: "internal"
-            return TestClient(app)
+        return TestClient(app)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -48,12 +51,22 @@ async def test_get_ticker(client, test_input, expected):
     assert response.json() == expected
 
 
-@pytest.mark.parametrize("authenticated, expected", [
+@pytest.mark.parametrize("headers, expected", [
     (
-        0, {"status": 401, "json":{"detail": "Not authenticated"}},
+        {}, {"status": 401, "json": {"detail": "Not authenticated"}},
     ),
     (
-        1, {"status": 200, "json": {
+        {
+            "Authorization": "Bearer blahblah",
+            "X-Internal-Client": "blahblah"
+        }, {"status": 401, "json": {'detail': 'Could not validate credentials'}},
+    ),
+    (
+        {
+            "Authorization": "Bearer blahblah",
+            "X-Internal-Client": "blahblah",
+            "X-Internal-Token": "blahblah"
+        }, {"status": 200, "json": {
             "count": 2,
             "items": [
                 {
@@ -86,9 +99,8 @@ async def test_get_ticker(client, test_input, expected):
         }}
     ),
 ])
-async def test_get_ohlc(client, valid_token, authenticated, expected):
+async def test_get_ohlc(client, valid_token, headers, expected):
     """Test the GET /ohlc endpoint."""
-    headers = [{}, {"Authorization": f"Bearer {valid_token}"}][authenticated]
     response = client.get("/ohlc", headers=headers)
     assert response.status_code == expected["status"]
     assert response.json() == expected["json"]
@@ -179,7 +191,82 @@ async def test_get_ohlc(client, valid_token, authenticated, expected):
 ])
 async def test_post_ohlc(client, test_input, expected):
     """Test the POST /ohlc endpoint."""
-    response = client.post("/ohlc", json=test_input)
+    response = client.post("/ohlc", json=test_input, headers={
+        "Authorization": "Bearer blahblah",
+        "X-Internal-Client": "blahblah",
+        "X-Internal-Token": "blahblah"
+    })
+    assert response.status_code == expected
+
+
+@pytest.mark.parametrize("test_input, expected", [
+    # New Valid Company
+    (
+        [{
+            "ticker": "RAND",
+            "name": "Random Company",
+            "website": "https://random.com",
+            "country": "USA",
+            "logo": "https://random.com/logo.png",
+            "industry": "Random Industry",
+            "exchange": "Random Exchange",
+            "phone": "1234567890",
+            "market_cap": 1000000000,
+            "num_shares": 1000000000
+        }], 200
+    ),
+    # Existing Company
+    (
+        [{
+            "ticker": "AAPL",
+            "name": "Random Company",
+            "website": "https://random.com",
+            "country": "USA",
+            "logo": "https://random.com/logo.png",
+            "industry": "Random Industry",
+            "exchange": "Random Exchange",
+            "phone": "1234567890",
+            "market_cap": 1000000000,
+            "num_shares": 1000000000
+        }], 200
+    ),
+    # Missing fields
+    (
+        [{
+            "ticker": "RAND",
+            "name": "Random Company",
+            "website": "https://random.com",
+            "logo": "https://random.com/logo.png",
+            "industry": "Random Industry",
+            "exchange": "Random Exchange",
+            "phone": "1234567890",
+            "market_cap": 1000000000,
+            "num_shares": 1000000000
+        }], 422
+    ),
+    # Invalid data type
+    (
+        [{
+            "ticker": "RAND",
+            "name": "Random Company",
+            "website": "https://random.com",
+            "country": "USA",
+            "logo": "https://random.com/logo.png",
+            "industry": "Random Industry",
+            "exchange": "Random Exchange",
+            "phone": "1234567890",
+            "market_cap": 1000000000,
+            "num_shares": "nan"
+        }], 422
+    )
+])
+async def test_put_companies(client, test_input, expected):
+    """Test the PUT /companies endpoint."""
+    response = client.put("/companies", json=test_input, headers={
+        "Authorization": "Bearer blahblah",
+        "X-Internal-Client": "blahblah",
+        "X-Internal-Token": "blahblah"
+    })
     assert response.status_code == expected
 
 
@@ -226,7 +313,11 @@ async def test_post_ohlc(client, test_input, expected):
 ])
 async def test_register_user(client, test_input, expected):
     """Test the POST /users/register endpoint."""
-    response = client.post("/users/register", json=test_input)
+    response = client.post(
+        "/users/register",
+        data=test_input,
+        headers={'content-type': 'application/x-www-form-urlencoded'}
+    )
     assert response.status_code == expected
 
 
@@ -243,14 +334,14 @@ async def test_register_user(client, test_input, expected):
         {
             "username": "test2",
             "password": "test"
-        }, 401
+        }, 400
     ),
     # Invalid password
     (
         {
             "username": "test",
             "password": "test2"
-        }, 401
+        }, 400
     ),
     # Missing fields
     (
@@ -263,10 +354,72 @@ async def test_register_user(client, test_input, expected):
         {
             "username": "test",
             "password": 123
-        }, 422
+        }, 400
     )
 ])
 async def test_login_user(client, test_input, expected):
     """Test the POST /users/login endpoint."""
-    response = client.post("/users/login", json=test_input)
+    response = client.post(
+        "/token",
+        data=test_input,
+        headers={'content-type': 'application/x-www-form-urlencoded'}
+    )
     assert response.status_code == expected
+
+
+async def test_get_latest_ohlc(client):
+    """Test the GET /latest endpoint."""
+    response = client.get("/latest", headers={
+        "Authorization": "Bearer blahblah",
+        "X-Internal-Client": "blahblah",
+        "X-Internal-Token": "blahblah"
+    })
+    assert response.status_code == 200
+    assert response.json() == {"count": 2, "items": [
+        {
+            "datetime": "2021-01-01T09:30:00",
+            "timestamp": 1609459200,
+            "ticker": "AAPL",
+            "name": "Apple Inc.",
+            "open": 133.52,
+            "high": 135.99,
+            "low": 133.52,
+            "close": 135.99,
+            "volume": 140,
+            "source": "yahoo",
+            "stored_company_name": "Apple"
+        },
+        {
+            "datetime": "2021-01-01T09:30:00",
+            "timestamp": 1609459200,
+            "ticker": "MSFT",
+            "name": "Microsoft Corporation",
+            "open": 222.53,
+            "high": 223.0,
+            "low": 222.53,
+            "close": 223.0,
+            "volume": 100,
+            "source": "yahoo",
+            "stored_company_name": "Microsoft"
+        }
+    ]}
+
+
+async def test_insights(client):
+    """Test the GET /insights endpoint."""
+    response = client.get("/insights", headers={
+        "Authorization": "Bearer blahblah",
+        "X-Internal-Client": "blahblah",
+        "X-Internal-Token": "blahblah"
+    })
+    assert response.status_code == 200
+
+
+async def test_market_movers(client):
+    """Test the GET /movers endpoint."""
+    response = client.get("/movers", headers={
+        "Authorization": "Bearer blahblah",
+        "X-Internal-Client": "blahblah",
+        "X-Internal-Token": "blahblah"
+    })
+    assert response.status_code == 200

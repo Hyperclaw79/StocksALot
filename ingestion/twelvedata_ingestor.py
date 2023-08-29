@@ -4,6 +4,7 @@ Ingestor for TwelveData.
 from __future__ import annotations
 import asyncio
 from itertools import zip_longest
+from typing import Literal
 
 import aiohttp
 
@@ -24,6 +25,13 @@ class TwelveDataConfig(BaseIgnestionConfig):
     """
     Configuration for the TwelveData ingestor.
     """
+    apikey: str
+    symbols: list[str]
+    interval: Literal[
+        '1min', '5min', '15min', '30min', '45min', '1h',
+        '2h', '4h', '8h', '1day', '1week', '1month'
+    ]
+
     def parameter_dict(self):
         """
         Returns a dict of mandatory and optional parameters.
@@ -41,6 +49,7 @@ class TwelveDataIngestor(BaseIngestor):
     """
     def __init__(self, config: TwelveDataConfig, *args, **kwargs):
         super().__init__(config, *args, **kwargs)
+        self.config: TwelveDataConfig
         self.base_url = "https://api.twelvedata.com/quote"
         self.field_mapping = {
             'datetime': ('datetime', str),
@@ -54,7 +63,7 @@ class TwelveDataIngestor(BaseIngestor):
             'volume': ('volume', int)
         }
 
-    async def fetch(self, *args, **kwargs):
+    async def fetch(self, *args, **kwargs) -> dict:
         """
         Factory method for creating a TwelveData ingestor.
         """
@@ -68,7 +77,7 @@ class TwelveDataIngestor(BaseIngestor):
             async with session.get(self.base_url, params=params) as resp:
                 return await resp.json()
 
-    async def ingest(self, *args, **kwargs):
+    async def ingest(self, *args, **kwargs) -> list[dict[str, str | int | float]]:
         """
         Ingests data from TwelveData.
         """

@@ -22,23 +22,24 @@ class DatabaseConnector(BaseConnector):
         self.host = host
         self.port = port
         self.base_url = f"http://{self.host}:{self.port}"
-        self.session = None
+        self.session: aiohttp.ClientSession = None
 
     async def connect(self):
         """Connects to the database."""
         self.session = aiohttp.ClientSession(headers={
+            'Authorization': 'Bearer Internal',
             'X-Internal-Client': 'Ingestor',
-            'X-Internal-Token': self._get_k8s_token()
+            'X-Internal-Token': str(self._get_k8s_token())
         })
 
     @ensure_session
-    async def get_ticker(self, ticker: str):
+    async def get_ticker(self, ticker: str) -> dict:
         """Gets a ticker from the database."""
         async with self.session.get(f"{self.base_url}/tickers/{ticker}") as resp:
             return await resp.json()
 
     @ensure_session
-    async def get_all_tickers(self):
+    async def get_all_tickers(self) -> dict:
         """Gets all tickers from the database."""
         while True:
             try:
@@ -54,19 +55,34 @@ class DatabaseConnector(BaseConnector):
                 await asyncio.sleep(10)
 
     @ensure_session
-    async def get_ohlc(self):
+    async def get_ohlc(self) -> dict:
         """Gets the saved OHLC data from the database."""
         async with self.session.get(f"{self.base_url}/ohlc") as resp:
             return await resp.json()
 
     @ensure_session
-    async def post_ohlc(self, ohlc: dict):
+    async def post_ohlc(self, ohlc: dict) -> dict:
         """Posts OHLC data to the database."""
         async with self.session.post(f"{self.base_url}/ohlc", json=ohlc) as resp:
             return await resp.json()
 
+    @ensure_session
+    async def put_companies(self, companies: list[dict]) -> dict:
+        """Puts companies to the database."""
+        async with self.session.put(f"{self.base_url}/companies", json=companies) as resp:
+            return await resp.json()
+
+    async def __aenter__(self) -> DatabaseConnector:
+        await super().__aenter__()
+        logger.info("Connected to the database server.")
+        return self
+
+    async def __aexit__(self, *_):
+        await super().__aexit__()
+        logger.info("Disconnected from the database server.")
+
     @staticmethod
-    def _get_k8s_token():
+    def _get_k8s_token() -> str:
         """Gets the kubernetes token."""
         try:
             with open(

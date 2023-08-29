@@ -7,7 +7,7 @@ from functools import wraps
 def ensure_session(func):
     """Ensures that the session is open before calling the function."""
     @wraps(func)
-    async def wrapper(self, *args, **kwargs):
+    async def wrapper(self: BaseConnector, *args, **kwargs):
         if not self.session:
             raise TypeError(
                 f"Use the {self} as an async context manager."

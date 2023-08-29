@@ -8,10 +8,12 @@ try:
     from .rabbitmq_connector import RabbitMQConnector
     from .database_connector import DatabaseConnector
     from .twelvedata_ingestor import TwelveDataConfig, TwelveDataIngestor
+    from .finnhub_ingestor import FinnHubConfig, FinnHubIngestor
 except ImportError:
     from rabbitmq_connector import RabbitMQConnector
     from database_connector import DatabaseConnector
     from twelvedata_ingestor import TwelveDataConfig, TwelveDataIngestor
+    from finnhub_ingestor import FinnHubConfig, FinnHubIngestor
 
 if TYPE_CHECKING:
     try:
@@ -30,7 +32,16 @@ def fetch_password(pwd_name: str, default: str = None) -> str:
     return default
 
 
-AVAILABLE_INGESTORS = [
+AVAILABLE_INGESTORS: list[
+    dict[str, BaseIngestor | BaseIgnestionConfig | dict]
+] = [
+    {
+        'ingestor': FinnHubIngestor,
+        'config': FinnHubConfig,
+        'config_params': {
+            'token': fetch_password("FINNHUB_API_KEY")
+        }
+    },
     {
         'ingestor': TwelveDataIngestor,
         'config': TwelveDataConfig,
