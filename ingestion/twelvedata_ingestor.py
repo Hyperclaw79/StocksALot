@@ -84,18 +84,22 @@ class TwelveDataIngestor(BaseIngestor):
         logger.info("Fetching data for %s symbols.", len(self.config.symbols))
         records = []
         for symbols in zip_longest(*[iter(self.config.symbols)] * 8):
-            symbols = [symbol for symbol in symbols if symbol]
-            resp = await self.fetch(symbols=symbols)
-            records_batch = [
-                {
-                    replacer: transform(data[field])
-                    for field, (replacer, transform) in self.field_mapping.items()
-                } | {'source': 'twelvedata'}
-                for data in resp.values()
-            ]
-            records.extend(records_batch)
-            logger.info("Fetched batch of %s records.", len(records_batch))
-            await self.store(records_batch)
-            await asyncio.sleep(60)
+            try:
+                symbols = [symbol for symbol in symbols if symbol]
+                resp = await self.fetch(symbols=symbols)
+                records_batch = [
+                    {
+                        replacer: transform(data[field])
+                        for field, (replacer, transform) in self.field_mapping.items()
+                    } | {'source': 'twelvedata'}
+                    for data in resp.values()
+                ]
+                records.extend(records_batch)
+                logger.info("Fetched batch of %s records.", len(records_batch))
+                await self.store(records_batch)
+                await asyncio.sleep(60)
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error("Failed to fetch data for %s.", symbols)
+                logger.error(exc)
         logger.info("Totally fetched %s records.", len(records))
         return records

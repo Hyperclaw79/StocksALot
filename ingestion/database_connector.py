@@ -58,19 +58,37 @@ class DatabaseConnector(BaseConnector):
     async def get_ohlc(self) -> dict:
         """Gets the saved OHLC data from the database."""
         async with self.session.get(f"{self.base_url}/ohlc") as resp:
-            return await resp.json()
+            try:
+                return await resp.json()
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error("Failed to get OHLC data.")
+                logger.error(exc)
+                return {
+                    "count": 0,
+                    "items": []
+                }
 
     @ensure_session
     async def post_ohlc(self, ohlc: dict) -> dict:
         """Posts OHLC data to the database."""
         async with self.session.post(f"{self.base_url}/ohlc", json=ohlc) as resp:
-            return await resp.json()
+            try:
+                return await resp.json()
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error("Failed to post OHLC data.")
+                logger.error(exc)
+                return {"error": "Failed to post OHLC data."}
 
     @ensure_session
     async def put_companies(self, companies: list[dict]) -> dict:
         """Puts companies to the database."""
         async with self.session.put(f"{self.base_url}/companies", json=companies) as resp:
-            return await resp.json()
+            try:
+                return await resp.json()
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error("Failed to put companies.")
+                logger.error(exc)
+                return {"error": "Failed to put companies."}
 
     async def __aenter__(self) -> DatabaseConnector:
         await super().__aenter__()
@@ -91,4 +109,5 @@ class DatabaseConnector(BaseConnector):
             ) as token_file:
                 return token_file.read()
         except FileNotFoundError:
+            logger.warning("Failed to get kubernetes token.")
             return None

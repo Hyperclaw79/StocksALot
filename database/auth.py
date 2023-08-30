@@ -8,14 +8,17 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt
 from jose.exceptions import JWTError
 from passlib.context import CryptContext
-from psycopg.sql import SQL
 
 from models import User, Token
 from forms import RegistrationForm
+from utils import logger_factory
 
 if TYPE_CHECKING:
     from dbconn import DatabaseConnection
     from k8s_authorizer import KubernetesAPI
+
+
+logger = logger_factory(__name__)
 
 
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
@@ -47,56 +50,51 @@ class Authenticator:
     ) -> User:
         """Register a user."""
         if form_data.username == "internal":
+            logger.warning("Registration attempt for internal user was made.")
             return User(username="forbidden", password="N/A")
-        fetched_user = await self.db_conn.fetchone(
-            SQL("""
-                SELECT 1 FROM users
-                WHERE
-                    username = {username}
-                    OR email = {email}
-            """).format(
-                username=SQL("%s"),
-                email=SQL("%s")
-            ), (form_data.username, form_data.email)
-        )
-        if fetched_user:
-            return User(username="exists", password="N/A")
-        form_data.password = self.get_password_hash(
-            form_data.password.get_secret_value()
-        )
-        fields = ["email", "password", "username"]
-        values = [getattr(form_data, field) for field in fields]
-        await self.db_conn.insert(
-            SQL("""
-                INSERT INTO users ({fields})
-                VALUES ({values})
-            """).format(
-                fields=SQL(",").join(SQL(field) for field in fields),
-                values=SQL(",").join(SQL("%s") for _ in values)
-            ), values
-        )
-        return User(username=form_data.username, password="N/A")
+        try:
+            fetched_user = await self.db_conn.check_user(form_data.username, form_data.email)
+            if fetched_user:
+                logger.warning("User %s tried to register again.", form_data.username)
+                return User(username="exists", password="N/A")
+            form_data.password = self.get_password_hash(
+                form_data.password.get_secret_value()
+            )
+            resp = await self.db_conn.create_user(
+                form_data.email,
+                form_data.password,
+                form_data.username
+            )
+            if resp:
+                logger.success("Registered user %s.", form_data.username)
+                return User(username=form_data.username, password="N/A")
+            raise HTTPException(status_code=400, detail="Failed to register user.")
+        except Exception as exp:  # pylint: disable=broad-except
+            logger.error("Failed to register user %s.", form_data.username)
+            logger.error(exp)
+            raise HTTPException(status_code=400, detail=str(exp)) from exp
 
     async def authenticate_user(self,
         form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
     ) -> User:
         """Authenticate a user."""
-        fetched_user = await self.db_conn.fetchone(
-            SQL("SELECT * FROM users WHERE username = {username}").format(
-                username=SQL("%s")
-            ), (form_data.username,)
-        )
-        if not fetched_user:
-            raise HTTPException(status_code=400, detail="Incorrect username or password")
-        fetched_user = User(**fetched_user)
-        if not fetched_user or not self.verify_password(
-            form_data.password,
-            # pylint: disable=no-member
-            fetched_user.password.get_secret_value()
-        ):
-            raise HTTPException(status_code=400, detail="Incorrect username or password")
-        token = self.get_access_token(fetched_user)
-        return Token(access_token=token, token_type="bearer")
+        try:
+            fetched_user = await self.db_conn.get_user(form_data.username)
+            if not fetched_user:
+                raise HTTPException(status_code=400, detail="Incorrect username or password")
+            fetched_user = User(**fetched_user)
+            if not fetched_user or not self.verify_password(
+                form_data.password,
+                # pylint: disable=no-member
+                fetched_user.password.get_secret_value()
+            ):
+                raise HTTPException(status_code=400, detail="Incorrect username or password")
+            token = self.get_access_token(fetched_user)
+            return Token(access_token=token, token_type="bearer")
+        except Exception as exp:  # pylint: disable=broad-except
+            logger.error("Failed to authenticate user %s.", form_data.username)
+            logger.error(exp)
+            raise HTTPException(status_code=400, detail=str(exp)) from exp
 
     async def get_current_user(
         self, token: Annotated[
@@ -135,6 +133,15 @@ class Authenticator:
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        expires = datetime.utcnow() + timedelta(days=self.expiry_days)
-        to_encode = {"sub": user.username, "exp": expires}
-        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        try:
+            expires = datetime.utcnow() + timedelta(days=self.expiry_days)
+            to_encode = {"sub": user.username, "exp": expires}
+            return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        except JWTError as jex:
+            logger.error("Failed to get access token for user %s.", user.username)
+            logger.error(jex)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from jex

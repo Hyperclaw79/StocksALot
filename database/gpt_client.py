@@ -137,27 +137,32 @@ class GptClient:  # pylint: disable=too-few-public-methods
             Message(role=GptRoles.USER, content=prompt_str)
         ]
         logger.info("Sending prompt to GPT API for insights.")
-        func_response = await openai.ChatCompletion.acreate(
-            model=self.model,
-            messages=[msg.model_dump() for msg in messages],
-            functions=[{
-                "name": "get_stock_insights",
-                "description": "Get a minimum of 3 and a maximum of 5 insights"
-                " from the provided stock data.",
-                "parameters": InsightsResponse.model_json_schema()
-            }],
-            function_call={"name": "get_stock_insights"}
-        )
-        response = json.loads(
-            func_response.choices[0].message
-            .function_call.arguments
-        )
-        logger.info("Received JSON response from GPT API for insights.")
-        if isinstance(response, list):
-            response = {"count": len(response), "items": response}
-        response["count"] = len(response["items"])
-        for item in response["items"]:
-            del item["insights"][5:]
+        try:
+            func_response = await openai.ChatCompletion.acreate(
+                model=self.model,
+                messages=[msg.model_dump() for msg in messages],
+                functions=[{
+                    "name": "get_stock_insights",
+                    "description": "Get a minimum of 3 and a maximum of 5 insights"
+                    " from the provided stock data.",
+                    "parameters": InsightsResponse.model_json_schema()
+                }],
+                function_call={"name": "get_stock_insights"}
+            )
+            response = json.loads(
+                func_response.choices[0].message
+                .function_call.arguments
+            )
+            logger.info("Received JSON response from GPT API for insights.")
+            if isinstance(response, list):
+                response = {"count": len(response), "items": response}
+            response["count"] = len(response["items"])
+            for item in response["items"]:
+                del item["insights"][5:]
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error("Failed to get insights from GPT API.")
+            logger.error(exc)
+            return InsightsResponse(count=0, items=[])
         return InsightsResponse(**response)
 
     # pylint: disable=unsubscriptable-object
@@ -228,4 +233,8 @@ class GptClient:  # pylint: disable=too-few-public-methods
                     ]
                 }]
             }
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error("Failed to parse insights.")
+            logger.error(exc)
+            return InsightsResponse(count=0, items=[])
         return InsightsResponse(**insight_dict)

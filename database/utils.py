@@ -2,6 +2,7 @@
 
 from functools import wraps
 import logging
+import os
 
 
 logging.SUCCESS = 25
@@ -47,3 +48,13 @@ def ensure_session(func: callable):
             await args[0].connect()
         return await func(*args, **kwargs)
     return wrapper
+
+
+def fetch_password(pwd_name: str, default: str = None) -> str:
+    """Get the password for the database."""
+    if pwd := os.getenv(pwd_name):
+        return pwd
+    if pwd_file := os.getenv(f"{pwd_name}_FILE"):
+        with open(pwd_file, encoding='utf-8') as password_file:
+            return password_file.read().strip()
+    return default

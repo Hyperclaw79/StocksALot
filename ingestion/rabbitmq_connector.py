@@ -57,6 +57,13 @@ class RabbitMQConnector(BaseConnector):
             return True
         except aio_pika.exceptions.DeliveryError:
             return False
+        except (
+            aio_pika.exceptions.ChannelClosed,
+            aio_pika.exceptions.ConnectionClosed
+        ):
+            logger.warning("Connection closed. Reconnecting...")
+            await self.connect()
+            return await self.publish(queue_name, message)
 
     async def __aenter__(self) -> RabbitMQConnector:
         await super().__aenter__()

@@ -74,19 +74,24 @@ class FinnHubIngestor(BaseIngestor):
         """
         Ingests data from FinnHub.
         """
-        logger.info("Fetching data for %s symbols.", len(self.config.symbols))
-        records = []
-        for symbol in self.config.symbols:
-            resp = await self.fetch(symbol=symbol)
-            records.append({
-                replacer: transform(resp[field])
-                for field, (replacer, transform) in self.field_mapping.items()
-            })
-            logger.info("Updated info for %s.", symbol)
-            await asyncio.sleep(1.0)
-        await self.store(records)
-        logger.info("Totally updated %s companies.", len(records))
-        return records
+        try:
+            logger.info("Fetching data for %s symbols.", len(self.config.symbols))
+            records = []
+            for symbol in self.config.symbols:
+                resp = await self.fetch(symbol=symbol)
+                records.append({
+                    replacer: transform(resp[field])
+                    for field, (replacer, transform) in self.field_mapping.items()
+                })
+                logger.info("Updated info for %s.", symbol)
+                await asyncio.sleep(1.0)
+            await self.store(records)
+            logger.info("Totally updated %s companies.", len(records))
+            return records
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error("Failed to ingest data from FinnHub.")
+            logger.error(exc)
+            return []
 
     async def store(self, records: list[dict[str, str | int]]) -> bool:
         """

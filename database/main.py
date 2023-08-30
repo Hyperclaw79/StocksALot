@@ -6,9 +6,8 @@ from typing import Annotated
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
 from fastapi.params import Path
-from psycopg.sql import SQL, Identifier
 
-from utils import logger_factory
+from utils import logger_factory, fetch_password
 from dbconn import DatabaseConnection
 from rcbconn import RabbitMQConnector
 from auth import Authenticator
@@ -19,15 +18,6 @@ from models import (
     Ticker, TickersResponse, Token, User, InsightsResponse,
     MoversResponse
 )
-
-def fetch_password(pwd_name: str, default: str = None) -> str:
-    """Get the password for the database."""
-    if pwd := os.getenv(pwd_name):
-        return pwd
-    if pwd_file := os.getenv(f"{pwd_name}_FILE"):
-        with open(pwd_file, encoding='utf-8') as password_file:
-            return password_file.read().strip()
-    return default
 
 
 logger = logger_factory("API Server")
@@ -64,17 +54,6 @@ gpt_client = GptClient(
 )
 
 
-async def process_data(ohlc: list[dict]):
-    """Process the OHLC data."""
-    keys = ohlc[0].keys()
-    query = SQL("INSERT INTO ohlc ({fields}) VALUES ({values})").format(
-        fields=SQL(', ').join(map(Identifier, keys)),
-        values=SQL(', ').join([SQL("%s") for _ in keys])
-    )
-    values = [[row[key] for key in keys] for row in ohlc]
-    return await db_handler.insert(query, values)
-
-
 @app.on_event("startup")
 async def startup():
     """On API startup, connect to the database."""""
@@ -82,7 +61,9 @@ async def startup():
     await rmq_handler.connect()
     await k8s_authorizer.connect()
     asyncio.create_task(
-        rmq_handler.periodic_consume("ohlc", process_data, 120)
+        rmq_handler.periodic_consume(
+            "ohlc", db_handler.process_ohlc, 120
+        )
     )
 
 
@@ -139,13 +120,13 @@ async def login_user(
 })
 async def get_tickers() -> TickersResponse:
     """Get all tickers."""
-    items = await db_handler.fetchall(
-        SQL("SELECT {fields} FROM {table}").format(
-            fields=SQL(', ').join(map(Identifier, ["ticker", "name"])),
-            table=Identifier("tickers")
-        )
-    )
-    response = {"count": len(items), "items": items}
+    try:
+        items = await db_handler.get_tickers()
+        response = {"count": len(items), "items": items}
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to get tickers.")
+        logger.error(exc)
+        response = {"count": 0, "items": []}
     return TickersResponse(**response)
 
 
@@ -163,15 +144,16 @@ async def get_ticker(
     ticker: str = Path(..., description="The ticker symbol of the stock")
 ) -> Ticker:
     """Get a ticker."""
-    response = await db_handler.fetchone(
-        SQL("SELECT {fields} FROM {table} WHERE ticker = {ticker}").format(
-            fields=SQL(', ').join(map(Identifier, ["ticker", "name"])),
-            table=Identifier("tickers"),
-            ticker=SQL("%s")
-        ),
-        (ticker,)
-    )
-    if not response:
+    try:
+        response = await db_handler.get_ticker(ticker)
+        if not response:
+            return JSONResponse(
+                content={"error": "Ticker not found."},
+                status_code=404
+            )
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to get ticker %s.", ticker)
+        logger.error(exc)
         return JSONResponse(
             content={"error": "Ticker not found."},
             status_code=404
@@ -195,18 +177,13 @@ async def get_ohlc(
             content={"error": "You shall not pass."},
             status_code=403
         )
-    items = await db_handler.fetchall(
-        SQL("""
-            SELECT {ohlc}.*, {ticker}.name AS stored_company_name
-                FROM {ohlc}
-                JOIN {ticker}
-                    ON {ticker}.ticker = {ohlc}.ticker;
-        """).format(
-            ohlc=Identifier("ohlc"),
-            ticker=Identifier("tickers")
-        )
-    )
-    response = {"count": len(items), "items": items}
+    try:
+        items = await db_handler.get_ohlc()
+        response = {"count": len(items), "items": items}
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to get OHLC data.")
+        logger.error(exc)
+        response = {"count": 0, "items": []}
     return OHLCResponse(**response)
 
 
@@ -227,8 +204,18 @@ async def post_ohlc(
             content={"error": "No records provided."},
             status_code=400
         )
-    response = await process_data([record.model_dump() for record in ohlc])
-    if not response:
+    try:
+        response = await db_handler.process_ohlc(
+            [record.model_dump() for record in ohlc]
+        )
+        if not response:
+            return JSONResponse(
+                content={"error": "Error inserting data."},
+                status_code=400
+            )
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to post OHLC data.")
+        logger.error(exc)
         return JSONResponse(
             content={"error": "Error inserting data."},
             status_code=400
@@ -253,36 +240,15 @@ async def put_companies(
             content={"error": "No records provided."},
             status_code=400
         )
-    query = SQL("""
-        UPDATE {company}
-        SET
-            ticker = updater.ticker,
-            name = updater.name,
-            industry = updater.industry,
-            exchange = updater.exchange,
-            website = updater.website,
-            phone = updater.phone,
-            country = updater.country,
-            logo = updater.logo,
-            market_cap = updater.market_cap,
-            num_shares = updater.num_shares
-        FROM (
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ) AS updater (
-            ticker, name, industry, exchange, website, phone,
-            country, logo, market_cap, num_shares
+    try:
+        response = await db_handler.insert_companies(companies)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to put company data.")
+        logger.error(exc)
+        return JSONResponse(
+            content={"error": "Error inserting data."},
+            status_code=400
         )
-        WHERE {company}.ticker = updater.ticker;
-    """).format(
-        company=Identifier("companies")
-    )
-    values = [[
-        company.ticker, company.name, company.industry, company.exchange,
-        company.website, company.phone, company.country, company.logo,
-        company.market_cap, company.num_shares
-    ] for company in companies]
-    response = await db_handler.insert(query, values)
     if not response:
         return JSONResponse(
             content={"error": "Error inserting data."},
@@ -305,21 +271,13 @@ async def get_latest_ohlc(
     """Get the latest OHLC data."""
     if username != "internal":
         logger.info("User %s requested the latest OHLC data.", username)
-    items = await db_handler.fetchall(
-        SQL("""
-            SELECT {ohlc}.*, {ticker}.name AS stored_company_name
-                FROM {ohlc}
-                JOIN {ticker}
-                    ON {ticker}.ticker = {ohlc}.ticker
-                WHERE {ohlc}.datetime = (
-                    SELECT MAX(datetime) FROM {ohlc}
-                );
-        """).format(
-            ohlc=Identifier("ohlc"),
-            ticker=Identifier("tickers")
-        )
-    )
-    response = {"count": len(items), "items": items}
+    try:
+        items = await db_handler.get_latest_ohlc()
+        response = {"count": len(items), "items": items}
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to get latest OHLC data.")
+        logger.error(exc)
+        response = {"count": 0, "items": []}
     return OHLCResponse(**response)
 
 
@@ -330,69 +288,24 @@ async def get_insights(
     """Get insights from the latest stocks."""
     if username != "internal":
         logger.info("User %s requested for insights.", username)
-    items = await db_handler.fetchall(
-        SQL("""
-            WITH dates AS (
-                SELECT DISTINCT datetime
-                FROM ohlc
-                ORDER BY datetime DESC
-                LIMIT 2
-            ), history AS (
-                SELECT *,
-                    LAG(volume) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_volume,
-                    LAG(high) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_high,
-                    LAG(low) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_low,
-                    LAG(open) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_open,
-                    LAG(close) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_close
-                    FROM ohlc
-                    JOIN dates USING (datetime)
-            ), change_calc AS (
-                SELECT *,
-                    CASE
-                        WHEN prev_open IS NOT NULL
-                        THEN abs((
-                                (open + close + high + low + volume) -
-                                (prev_open + prev_close + prev_high + prev_low + prev_volume)
-                            ) / (
-                                prev_open + prev_close + prev_high + prev_low + prev_volume
-                        ))
-                        ELSE NULL
-                    END AS change_ratio
-                    FROM history
-            ), top10 AS
-            (
-                SELECT ticker
-                FROM change_calc
-                ORDER BY abs(change_ratio) DESC
-                LIMIT 10
-            )
-
-            SELECT
-                datetime, ticker, name,
-                open, high, low, close,
-                volume
-            FROM ohlc
-            JOIN top10 USING (ticker)
-            JOIN dates USING (datetime)
-            ORDER BY datetime DESC;
-        """).format(
-            ohlc=Identifier("ohlc")
-        )
-    )
-    result = await gpt_client.prompt(items)
-    records = []
-    for item in result.items:
-        for insight in item.insights:
-            record = insight.model_dump() | {"datetime": item.datetime}
-            records.append(record)
+    try:
+        items = await db_handler.get_insights_input()
+        result = await gpt_client.prompt(items)
+        records = []
+        for item in result.items:
+            for insight in item.insights:
+                record = insight.model_dump() | {"datetime": item.datetime}
+                records.append(record)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to get insights.")
+        logger.error(exc)
+        result = InsightsResponse(count=0, items=[])
     if records:
-        await db_handler.insert(
-            SQL("INSERT INTO insights ({fields}) VALUES ({values})").format(
-                fields=SQL(', ').join(map(Identifier, records[0].keys())),
-                values=SQL(', ').join([SQL("%s") for _ in records[0].keys()])
-            ),
-            [list(record.values()) for record in records]
-        )
+        try:
+            await db_handler.insert_insights(records)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.warning("Failed to insert insights.")
+            logger.warning(exc)
     return result
 
 
@@ -404,89 +317,12 @@ async def get_market_movers(
     """Get the market movers."""
     if username != "internal":
         logger.info("User %s requested for market movers.", username)
-    items = await db_handler.fetchall(
-        SQL("""
-            WITH dates AS (
-                SELECT DISTINCT datetime
-                FROM {ohlc}
-                ORDER BY datetime DESC
-                LIMIT 2
-            ), history AS (
-                SELECT *,
-                    LAG(volume) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_volume,
-                    LAG(high) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_high,
-                    LAG(low) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_low,
-                    LAG(open) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_open,
-                    LAG(close) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_close
-                    FROM {ohlc}
-                    JOIN dates USING (datetime)
-            ), change_calc AS (
-                SELECT *,
-                    CASE
-                        WHEN prev_open IS NOT NULL
-                        THEN abs((
-                                (open + close + high + low + volume) -
-                                (prev_open + prev_close + prev_high + prev_low + prev_volume)
-                            ) / (
-                                prev_open + prev_close + prev_high + prev_low + prev_volume
-                        ))
-                        ELSE NULL
-                    END AS change_ratio,
-                    CASE WHEN prev_open IS NOT NULL
-                        THEN (open - prev_open)
-                        ELSE 0
-                    END AS open_delta,
-                    CASE WHEN prev_close IS NOT NULL
-                        THEN (close - prev_close)
-                        ELSE 0
-                    END AS close_delta,
-                    CASE WHEN prev_high IS NOT NULL
-                        THEN (high - prev_high)
-                        ELSE 0
-                    END AS high_delta,
-                    CASE WHEN prev_low IS NOT NULL
-                        THEN (low - prev_low)
-                        ELSE 0
-                    END AS low_delta,
-                    CASE WHEN prev_volume IS NOT NULL
-                        THEN (volume - prev_volume)
-                        ELSE 0
-                    END AS volume_delta
-                    FROM history
-            ), top10 AS
-            (
-                SELECT *
-                FROM change_calc
-                ORDER BY abs(change_ratio) DESC
-                LIMIT 10
-            )
-            SELECT
-                row_to_json(company.*) AS profile,
-                json_build_object(
-                    'open', top10.open,
-                    'close', top10.close,
-                    'high', top10.high,
-                    'low', top10.low,
-                    'volume', top10.volume
-                ) AS current_metrics,
-                json_build_object(
-                    'open', top10.open_delta,
-                    'close', top10.close_delta,
-                    'high', top10.high_delta,
-                    'low', top10.low_delta,
-                    'volume', top10.volume_delta
-                ) AS metric_deltas
-            FROM {ohlc}
-            JOIN top10 USING (ticker)
-            JOIN dates
-                ON top10.datetime = dates.datetime
-            JOIN {company} AS company USING (ticker)
-            ORDER BY top10.datetime DESC;
-        """).format(
-            ohlc=Identifier("ohlc"),
-            company=Identifier("companies")
-        )
-    )
+    try:
+        items = await db_handler.get_market_movers()
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Failed to get market movers.")
+        logger.error(exc)
+        items = []
     return MoversResponse(count=len(items), items=items)
 
 

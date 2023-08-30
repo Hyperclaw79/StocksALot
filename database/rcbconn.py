@@ -67,6 +67,14 @@ class RabbitMQConnector(BaseConnector):
         """Consumes a queue periodically."""
         logger.info("RabbitMQ: Periodic consumption started.")
         while True:
-            await self.consume(queue_name, callback)
-            await asyncio.sleep(interval)
-            logger.info("RabbitMQ: Checking Queue for new messages.")
+            try:
+                await self.consume(queue_name, callback)
+                await asyncio.sleep(interval)
+                logger.info("RabbitMQ: Checking Queue for new messages.")
+            except (
+                aio_pika.exceptions.ChannelClosed,
+                aio_pika.exceptions.ConnectionClosed
+            ):
+                logger.warning("RabbitMQ: Connection closed. Reconnecting...")
+                await self.connect()
+                await asyncio.sleep(10)
