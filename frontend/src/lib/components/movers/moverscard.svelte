@@ -248,7 +248,7 @@
         display: flex;
         flex-direction: column;
         padding: 1.5rem;
-        width: 30vw;
+        width: 36vw;
         overflow: hidden;
         max-height: 18vh;
         transition: max-height ease-in-out 0.5s, border-radius ease-in-out 0.1s;

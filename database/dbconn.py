@@ -205,7 +205,7 @@ class DatabaseConnection(BaseConnector):
             SQL("""
                 WITH dates AS (
                     SELECT DISTINCT datetime
-                    FROM ohlc
+                    FROM {ohlc}
                     ORDER BY datetime DESC
                     LIMIT 2
                 ), history AS (
@@ -215,7 +215,7 @@ class DatabaseConnection(BaseConnector):
                         LAG(low) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_low,
                         LAG(open) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_open,
                         LAG(close) OVER (PARTITION BY ticker ORDER BY datetime) AS prev_close
-                        FROM ohlc
+                        FROM {ohlc}
                         JOIN dates USING (datetime)
                 ), change_calc AS (
                     SELECT *,
@@ -227,8 +227,28 @@ class DatabaseConnection(BaseConnector):
                                 ) / (
                                     prev_open + prev_close + prev_high + prev_low + prev_volume
                             ))
-                            ELSE NULL
-                        END AS change_ratio
+                            ELSE 0
+                        END AS change_ratio,
+                        CASE WHEN prev_open IS NOT NULL
+                            THEN (open - prev_open)
+                            ELSE 0
+                        END AS open_delta,
+                        CASE WHEN prev_close IS NOT NULL
+                            THEN (close - prev_close)
+                            ELSE 0
+                        END AS close_delta,
+                        CASE WHEN prev_high IS NOT NULL
+                            THEN (high - prev_high)
+                            ELSE 0
+                        END AS high_delta,
+                        CASE WHEN prev_low IS NOT NULL
+                            THEN (low - prev_low)
+                            ELSE 0
+                        END AS low_delta,
+                        CASE WHEN prev_volume IS NOT NULL
+                            THEN (volume - prev_volume)
+                            ELSE 0
+                        END AS volume_delta
                         FROM history
                 ), top10 AS
                 (
@@ -237,14 +257,15 @@ class DatabaseConnection(BaseConnector):
                     ORDER BY abs(change_ratio) DESC
                     LIMIT 10
                 )
-
                 SELECT
-                    datetime, ticker, name,
-                    open, high, low, close,
-                    volume
-                FROM ohlc
-                JOIN top10 USING (ticker)
-                JOIN dates USING (datetime)
+                    {ohlc}.datetime, {ohlc}.ticker, {ohlc}.name,
+                    {ohlc}.open, {ohlc}.high, {ohlc}.low, {ohlc}.close,
+                    {ohlc}.volume
+                FROM {ohlc}
+                JOIN top10
+                    ON {ohlc}.ticker = top10.ticker
+                JOIN dates
+                    ON {ohlc}.datetime = dates.datetime
                 ORDER BY datetime DESC;
             """).format(
                 ohlc=Identifier("ohlc")
@@ -291,7 +312,7 @@ class DatabaseConnection(BaseConnector):
                                 ) / (
                                     prev_open + prev_close + prev_high + prev_low + prev_volume
                             ))
-                            ELSE NULL
+                            ELSE 0
                         END AS change_ratio,
                         CASE WHEN prev_open IS NOT NULL
                             THEN (open - prev_open)
@@ -339,10 +360,9 @@ class DatabaseConnection(BaseConnector):
                     ) AS metric_deltas
                 FROM {ohlc}
                 JOIN top10 USING (ticker)
-                JOIN dates
-                    ON top10.datetime = dates.datetime
                 JOIN {company} AS company USING (ticker)
-                ORDER BY top10.datetime DESC;
+                WHERE {ohlc}.datetime = (SELECT MAX(datetime) FROM dates)
+                ORDER BY {ohlc}.datetime DESC;
             """).format(
                 ohlc=Identifier("ohlc"),
                 company=Identifier("companies")
