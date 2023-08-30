@@ -52,7 +52,7 @@ metadata:
 spec:
   selector:
     app: rabbitmq
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - name: internal
       protocol: TCP
