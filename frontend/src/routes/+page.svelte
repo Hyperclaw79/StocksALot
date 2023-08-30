@@ -13,7 +13,6 @@
     const secs_10 = 10 * 1000;
     const hr_1 = 60 * 60 * 1000;
     const intervals = [immediate, secs_10, hr_1];
-    const preloaded: ("latest" | "movers" | "insights")[] = [];
     let loadStage = 0;
 
     let data: dataProp = {
@@ -38,32 +37,20 @@
         if (loadStage === 0) {
             loadStage = 1;
         }
-
-        const latest = await getLatest();
-        if (!preloaded.includes("latest")) {
+        let latest, movers, insights;
+        if ((loadStage <= 1 && data.latest.count == 0) || loadStage > 1) {
+            latest = await getLatest();
             data.latest = latest;
-            if (latest.count > 0) {
-                preloaded.push("latest");
-            }
         }
-
-        const movers = await getMovers();
-        if (!preloaded.includes("movers")) {
+        if ((loadStage <= 1 && data.movers.count == 0) || loadStage > 1) {
+            movers = await getMovers();
             data.movers = movers;
-            if (movers.count > 0) {
-                preloaded.push("movers");
-            }
         }
-
-        const insights = await getInsights();
-        if (!preloaded.includes("insights")) {
+        if ((loadStage <= 1 && data.insights.count == 0) || loadStage > 1) {
+            insights = await getInsights();
             data.insights = insights;
-            if (insights.count > 0) {
-                preloaded.push("insights");
-            }
         }
-
-        if (insights.count > 0 && latest.count > 0 && movers.count > 0) {
+        if ((latest?.count || 0) > 0 && (movers?.count || 0) > 0 && (insights?.count || 0) > 0) {
             loadStage = 2;
         }
         // Recursive call to refresh data
