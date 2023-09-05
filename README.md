@@ -75,6 +75,9 @@
 
 ## Overview
 StocksALot is a cutting edge PoC for Stock Market Analysis employing OpenAI's GPT LLMs for insight inference.
+
+![Preview](assets/stocksalot_preview.gif)
+
 * The backend is powered by FastAPI serving the multiple roles:
   * Communication with a PostgreSQL database
   * Interacting with OpenAI's GPT models to infer insights from the OHLC data
@@ -307,6 +310,7 @@ frontend-deployment-59d7574dfb-v6khd    1/1     Running     0          1m
 ingestion-cronjob-a-28208760-8rjs6      0/1     Completed   0          1m
 ingestion-cronjob-b-28208820-5d5kg      0/1     Completed   0          1m
 rabbitmq-statefulset-0                  1/1     Running     0          1m
+redis-statefulset-0                     1/1     Running     0          1m
 ```
 - You can manually trigger the ingestion cronjobs by running the following commands:
 ```bash
