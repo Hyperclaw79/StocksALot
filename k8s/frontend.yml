@@ -23,6 +23,8 @@ spec:
         env:
           - name: DB_SERVER_HOST
             value: "db-server-service"
+          - name: REDIS_HOST
+            value: "redis-service"
         ports:
           - containerPort: 4173
         resources:

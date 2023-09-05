@@ -1,5 +1,8 @@
-import { fetchFactory } from "$lib/utils";
+import loggerFactory from "$lib/logger";
+import { cachedFetch } from "$lib/utils";
 import { json } from "@sveltejs/kit";
+
+const logger = loggerFactory("Movers API");
 
 /**
  * Fetches the latest movers data from the server.
@@ -7,14 +10,15 @@ import { json } from "@sveltejs/kit";
  */
 export const GET = async (): Promise<Response> => {
     try {
-        console.debug("Fetching movers data...");
-        const res = await fetchFactory("movers");
+        logger.info("Fetching movers data...");
+        const res = await cachedFetch("movers");
         const jsonData: Movers = await res.json();
         if (jsonData === undefined) {
             return dummyData();
         }
         const response: Movers = jsonData;
-        console.debug(`Movers data fetched:\n${JSON.stringify(response)}`);
+        logger.success("Movers data fetched.");
+        logger.debug(JSON.stringify(response));
         return json(response);
     } catch (e) {
         return dummyData();

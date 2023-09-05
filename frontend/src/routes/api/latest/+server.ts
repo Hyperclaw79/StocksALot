@@ -1,5 +1,8 @@
-import { fetchFactory } from "$lib/utils";
+import loggerFactory from "$lib/logger";
+import { cachedFetch } from "$lib/utils";
 import { json } from "@sveltejs/kit";
+
+const logger = loggerFactory("Latest OHLC API");
 
 /**
  * Fetches the latest OHLC data from the server.
@@ -7,8 +10,8 @@ import { json } from "@sveltejs/kit";
  */
 export const GET = async (): Promise<Response> => {
     try {
-        console.debug("Fetching latest data...");
-        const res = await fetchFactory("latest");
+        logger.info("Fetching latest ohlc data...");
+        const res = await cachedFetch("latest");
         const jsonData: OHLCOriginalResponse = await res.json();
         if (jsonData === undefined) {
             return dummyData();
@@ -30,7 +33,8 @@ export const GET = async (): Promise<Response> => {
             count: jsonData.count,
             items: transformedData
         };
-        console.debug(`Latest data fetched:\n${JSON.stringify(response)}`);
+        logger.success("Latest data ohlc fetched.");
+        logger.debug(JSON.stringify(response));
         return json(response);
     } catch (e) {
         return dummyData();

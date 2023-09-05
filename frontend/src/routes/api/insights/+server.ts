@@ -1,5 +1,8 @@
-import { fetchFactory } from "$lib/utils";
+import loggerFactory from "$lib/logger";
+import { cachedFetch } from "$lib/utils";
 import { json } from "@sveltejs/kit";
+
+const logger = loggerFactory("Insights API");
 
 let data: TimelineData[] = [];
 
@@ -9,8 +12,8 @@ let data: TimelineData[] = [];
  */
 export const GET = async (): Promise<Response> => {
     try {
-        console.debug("Fetching insights data...");
-        const res = await fetchFactory("insights");
+        logger.info("Fetching insights data...");
+        const res = await cachedFetch("insights");
         const jsonData: InsightsResponse = await res.json();
         const insights = jsonData.items;
         if (insights.length === 0) {
@@ -26,9 +29,10 @@ export const GET = async (): Promise<Response> => {
                 data = temp;
             }
         }
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        logger.error({ message: error });
     }
-    console.debug(`Insights data fetched:\n${JSON.stringify(data)}`);
+    logger.success("Insights data fetched.");
+    logger.debug(JSON.stringify(data));
     return json({ count: data.length, items: data });
 };

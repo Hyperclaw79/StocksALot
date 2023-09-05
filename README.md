@@ -63,6 +63,10 @@
           <td>Message Queue</td>
           <td><img src="https://img.shields.io/badge/rabbitmq-3.12-FF6600?style=for-the-badge&logo=rabbitmq" alt="RabbitMQ" /></td>
         </tr>
+        <tr>
+          <td>Cache</td>
+          <td><img src="https://img.shields.io/badge/redis-7.2-DC382D?style=for-the-badge&logo=redis" alt="Redis" /></td>
+        </tr>
       </table>
     </td>
   </tr>
@@ -70,7 +74,16 @@
 
 
 ## Overview
-StocksALot is a small PoC showcasing the extraction, processing, and storage of OHLC (Open, High, Low, Close) data for the top 50 US stocks. The system leverages microservices architecture, containerization with docker, container orchestration through Kubernetes, and message queuing for seamless operation.
+StocksALot is a cutting edge PoC for Stock Market Analysis employing OpenAI's GPT LLMs for insight inference.
+* The backend is powered by FastAPI serving the multiple roles:
+  * Communication with a PostgreSQL database
+  * Interacting with OpenAI's GPT models to infer insights from the OHLC data
+  * Authenticator for external API access
+* The lightweight Frontend is written in TypeScript and compiled by Sveltekit.
+* The data ingestion component is written in pure Python and work asynchronously as Cronjobs.
+* For seamless communication between data ingestion and data storage, a RabbitMQ message broker is employed.
+* To prevent excessive API calls, a Redis cache is used to store the OHLC data for faster retrieval.
+* The entire application is containerized using Docker and orchestrated using Kubernetes.
 
 ## 📐 High Level System Design
 
