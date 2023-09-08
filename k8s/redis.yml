@@ -63,3 +63,22 @@ spec:
   volumeMode: Filesystem
   accessModes:
     - ReadWriteOnce
+
+---
+# A CronJob to warm the Redis cache every hour.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: curl-frontend-cronjob
+spec:
+  schedule: "10 */1 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl-frontend
+            image: curlimages/curl
+            command: ["curl", "frontend-service"]
+          restartPolicy: OnFailure
+  concurrencyPolicy: Forbid
