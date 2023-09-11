@@ -6,11 +6,18 @@ metadata:
     name: ingress
   namespace: default
   annotations:
+    kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.global-static-ip-name: "stocksalot-ingress-ip"
+    # cert-manager.io/issuer: "letsencrypt-prod"
 spec:
-  ingressClassName: nginx
+  tls:
+    - hosts:
+        - stocksalot.tech
+        - api.stocksalot.tech
+      secretName: stocksalot-tls
   rules:
-  - host: api.stocksalot.com
+  - host: api.stocksalot.tech
     http:
       paths:
       - path: /
@@ -19,8 +26,8 @@ spec:
           service:
             name: db-server-service
             port:
-              number: 5000
-  - host: stocksalot.com
+              number: 80
+  - host: stocksalot.tech
     http:
       paths:
       - path: /

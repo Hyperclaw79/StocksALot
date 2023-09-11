@@ -1,6 +1,10 @@
 """A module containing utility functions."""
 
 import logging
+import os
+
+
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
 
 
 logging.SUCCESS = 25
@@ -34,4 +38,5 @@ def logger_factory(name: str) -> CustomLogger:
         )
     )
     logger.addHandler(handler)
+    logger.setLevel(LOG_LEVEL)
     return logger

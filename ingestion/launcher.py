@@ -58,7 +58,7 @@ async def main():
     async with (
         DatabaseConnector(
             host=os.getenv('DB_SERVER_HOST', 'localhost'),
-            port=os.getenv('DB_SERVER_PORT', '5000')
+            port=os.getenv('DB_SERVER_PORT', '80')
         ) as dbconn,
         RabbitMQConnector(
             host=os.getenv('RABBITMQ_HOST', 'localhost'),

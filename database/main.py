@@ -296,16 +296,16 @@ async def get_insights(
             for insight in item.insights:
                 record = insight.model_dump() | {"datetime": item.datetime}
                 records.append(record)
+        if records:
+            try:
+                await db_handler.insert_insights(records)
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning("Failed to insert insights.")
+                logger.warning(exc)
     except Exception as exc:  # pylint: disable=broad-except
         logger.error("Failed to get insights.")
         logger.error(exc)
         result = InsightsResponse(count=0, items=[])
-    if records:
-        try:
-            await db_handler.insert_insights(records)
-        except Exception as exc:  # pylint: disable=broad-except
-            logger.warning("Failed to insert insights.")
-            logger.warning(exc)
     return result
 
 

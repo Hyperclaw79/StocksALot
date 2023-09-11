@@ -70,11 +70,6 @@ spec:
     app: db-server
   type: LoadBalancer
   ports:
-    - name: external
-      protocol: TCP
+    - protocol: TCP
       port: 80
-      targetPort: 5000
-    - name: internal
-      protocol: TCP
-      port: 5000
       targetPort: 5000

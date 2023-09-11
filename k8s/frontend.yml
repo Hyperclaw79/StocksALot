@@ -44,9 +44,8 @@ metadata:
 spec:
   selector:
     app: frontend
-  type: LoadBalancer
+  type: ClusterIP
   ports:
-    - name: external
-      protocol: TCP
+    - protocol: TCP
       port: 80
       targetPort: 4173

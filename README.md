@@ -340,13 +340,13 @@ kubectl exec -it database-statefulset-0 -- psql -U postgres -d stocks -c "SELECT
  2023-08-18 15:30:00 | 1692388746 | META   | Meta Platforms, Inc. | 283.46 | 285.69 | 282.70 | 283.28 | 5502937 | twelvedata
 (5 rows)
 ```
-- Ingress for this application is configured to use the `stocksalot.com` as the host domain. \
+- Ingress for this application is configured to use the `stocksalot.tech` as the host domain. \
   You need to add the following entry to your `/etc/hosts` (or `C:/Windows/System32/drivers/etc/hosts` on Windows) file to access the application:
 ```bash
-127.0.0.1 stocksalot.com api.stocksalot.com
+127.0.0.1 stocksalot.tech api.stocksalot.tech
 ```
-- You can then access the application at [http://stocksalot.com](http://stocksalot.com).
-- You can access the API at [http://api.stocksalot.com](http://api.stocksalot.com/docs).
+- You can then access the application at [http://stocksalot.tech](http://stocksalot.tech).
+- You can access the API at [http://api.stocksalot.tech](http://api.stocksalot.tech/docs).
   
 ### 🎉 And that's it! You have successfully setup StocksALot in your local Kubernetes cluster.
 

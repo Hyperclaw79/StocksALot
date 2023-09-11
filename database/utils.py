@@ -5,6 +5,9 @@ import logging
 import os
 
 
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+
+
 logging.SUCCESS = 25
 logging.addLevelName(logging.SUCCESS, "SUCCESS")
 
@@ -36,6 +39,7 @@ def logger_factory(name: str) -> CustomLogger:
         )
     )
     logger.addHandler(handler)
+    logger.setLevel(LOG_LEVEL)
     return logger
 
 

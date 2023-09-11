@@ -59,6 +59,10 @@ jobs:
                         --docker-password=${{ secrets.GHCR_PAT }} \
                         --docker-email=${{ github.event.pusher.email }}
 
+                    kubectl create secret tls stocksalot-tls \
+                        --cert=${{ secrets.STOCKSALOT_TLS_CERT }} \
+                        --key=${{ secrets.STOCKSALOT_TLS_KEY }}
+
             - name: Apply Kubernetes Manifests
               run: |
                     kubectl apply -f k8s/database.yml
