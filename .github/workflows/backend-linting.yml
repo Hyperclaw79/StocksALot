@@ -1,6 +1,6 @@
-# This workflow will install Python dependencies and run tests.
+# This workflow will install Python dependencies and run linting.
 
-name: Testing
+name: Linting
 
 on:
     push:
@@ -8,10 +8,17 @@ on:
             - analysis/**.py
             - database/**.py
             - ingestion/**.py
+            - .github/workflows/backend-linting.yml
+    pull_request:
+        paths:
+            - analysis/**.py
+            - database/**.py
+            - ingestion/**.py
+            - .github/workflows/backend-linting.yml
     workflow_dispatch:
 
 jobs:
-    Testing:
+    Linting_Backend:
         strategy:
             matrix:
                 python-version: [3.11]
@@ -22,10 +29,11 @@ jobs:
             - uses: actions/setup-python@v4
               with:
                   python-version: ${{ matrix.python-version }}
-            - run: |
+            - name: Install dependencies (Backend)
+              run: |
                   python -m pip install --upgrade pip
                   if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
                   if [ -f dev_requirements.txt ]; then pip install -r dev_requirements.txt; fi
-            - name: Testing
+            - name: Linting (Backend)
               run: |
-                  python -m pytest -v
+                  pylint -f colorized analysis database ingestion

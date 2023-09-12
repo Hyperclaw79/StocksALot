@@ -1,0 +1,96 @@
+# This workflow deploys docker images on a local kubernetes cluster.
+name: Deploy K8s to Cloud
+
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths-ignore:
+            - "README.md"
+            - "assets/**"
+
+permissions:
+    id-token: write
+    contents: read
+    packages: write
+
+jobs:
+    local_test:
+        uses: ./.github/workflows/local-deploy.yml
+        secrets: inherit
+        with:
+            DATABASE_USER: ${{ vars.DATABASE_USER }}
+            DATABASE_NAME: ${{ vars.DATABASE_NAME }}
+            RABBITMQ_USER: ${{ vars.RABBITMQ_USER }}
+            API_TOKEN_EXPIRY_DAYS: ${{ vars.API_TOKEN_EXPIRY_DAYS }}
+
+    deploy:
+        needs: local_test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Authenticate to Google Cloud
+              uses: google-github-actions/auth@v1
+              with:
+                  create_credentials_file: 'true'
+                  workload_identity_provider: "projects/${{ secrets.GCP_PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ secrets.GCP_WORKLOAD_IDENTITY_POOL }}/providers/github"
+                  service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+                  project_id: ${{ secrets.GCP_PROJECT_ID }}
+            - name: Get GKE Credentials
+              uses: 'google-github-actions/get-gke-credentials@v1'
+              with:
+                  cluster_name: 'stocksalot-cluster'
+                  location: 'us-central1'
+
+            - name: Delete Existing Configmaps and Secrets
+              run: kubectl delete configmaps,secrets --all
+
+            - name: Create Configmaps and Secrets
+              run: |
+                  kubectl create configmap db-config \
+                      --from-literal=DATABASE_USER=${{ vars.DATABASE_USER }} \
+                      --from-literal=DATABASE_NAME=${{ vars.DATABASE_NAME }}
+                  kubectl create configmap db-server-config \
+                      --from-literal=DATABASE_USER=${{ vars.DATABASE_USER }} \
+                      --from-literal=DATABASE_NAME=${{ vars.DATABASE_NAME }} \
+                      --from-literal=RABBITMQ_USER=${{ vars.RABBITMQ_USER }} \
+                      --from-literal=API_TOKEN_EXPIRY_DAYS=${{ vars.API_TOKEN_EXPIRY_DAYS }}
+                  kubectl create configmap ingestion-config \
+                      --from-literal=RABBITMQ_USER=${{ vars.RABBITMQ_USER }}
+                  kubectl create configmap init-script-config \
+                      --from-file=initdb.sh=./database/init/initdb.sh
+                  kubectl create configmap rabbitmq-config \
+                      --from-literal=RABBITMQ_DEFAULT_USER=${{ vars.RABBITMQ_USER }}
+
+                  kubectl create secret generic db-secrets \
+                      --from-literal=POSTGRES_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+                  kubectl create secret generic db-server-secrets \
+                      --from-literal=DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+                      --from-literal=RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }} \
+                      --from-literal=API_TOKEN_SECRET=${{ secrets.API_TOKEN_SECRET }} \
+                      --from-literal=GPT_API_KEY=${{ secrets.GPT_API_KEY }}
+                  kubectl create secret generic ingestion-secrets \
+                      --from-literal=RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }} \
+                      --from-literal=TWELVEDATA_API_KEY_1=${{ secrets.TWELVEDATA_API_KEY_1 }} \
+                      --from-literal=TWELVEDATA_API_KEY_2=${{ secrets.TWELVEDATA_API_KEY_2 }} \
+                      --from-literal=FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
+                  kubectl create secret generic rabbitmq-secrets \
+                      --from-literal=RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_PASSWORD }}
+
+                  kubectl create secret docker-registry ghcr \
+                      --docker-server=https://ghcr.io \
+                      --docker-username=${{ github.actor }} \
+                      --docker-password=${{ secrets.GHCR_PAT }} \
+                      --docker-email=${{ github.event.pusher.email }}
+
+                  echo "${{ secrets.STOCKSALOT_TLS_KEY }}" > stocksalot-tls.key
+                  echo "${{ secrets.STOCKSALOT_TLS_CERT }}" > stocksalot-tls.crt
+                  kubectl create secret tls stocksalot-tls \
+                      --key=stocksalot-tls.key \
+                      --cert=stocksalot-tls.crt
+
+            - name: Apply Kubernetes Manifests
+              run: |
+                  kubectl apply -f k8s

@@ -1,74 +1,64 @@
 # 📈 StocksALot
 <table>
   <tr>
-    <td>
-      <table align="center">
-        <tr>
-          <td>
-            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/build.yml?style=for-the-badge&logo=docker&label=Build" alt="Build" />
-          </td>
-          <td>
-            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/k8s.yml?style=for-the-badge&logo=kubernetes&label=Deploy" alt="Deploy" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/testing.yml?style=for-the-badge&logo=pytest&label=Tests" alt="Tests" />
-          </td>
-          <td>
-            <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/linting.yml?style=for-the-badge&logo=python&label=Linting" alt="Tests" />
-          </td>
-        </tr>
-      </table>
-    </td>
+    <table>
+      <tr>
+        <td>
+          <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/build.yml?style=for-the-badge&logo=docker&label=Build" alt="Build" />
+        </td>
+        <td>
+          <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/backend-linting.yml?style=for-the-badge&logo=python&label=Pylint" alt="Linting" />
+        </td>
+        <td>
+          <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/local-deploy.yml?style=for-the-badge&logo=kubernetes&label=Local%20Deploy" alt="Deploy" />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/testing.yml?style=for-the-badge&logo=pytest&label=Tests" alt="Tests" />
+        </td>
+        <td>
+          <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/frontend-linting.yml?style=for-the-badge&logo=eslint&logoColor=blue&label=ESLint" alt="Linting" />
+        </td>
+        <td>
+          <img src="https://img.shields.io/github/actions/workflow/status/Hyperclaw79/Stocks-Tracker/cloud-deploy.yml?style=for-the-badge&logo=kubernetes&label=Cloud%20Deploy" alt="Deploy" />
+        </td>
+      </tr>
+    </table>
   </tr>
   <tr>
-    <td>
-      <table align="left">
-        <tr>
-          <th>Component</th>
-          <th>Tech Stack</th>
-        </tr>
-        <tr>
-          <td>Ingestion</td>
-          <td><img src="https://img.shields.io/badge/python-3.11-yellow?style=for-the-badge&logo=python&logoColor=yellow" alt="Python" /></td>
-        </tr>
-        <tr>
-          <td>Backend</td>
-          <td><img src="https://img.shields.io/badge/FastAPI-0.101-009688?style=for-the-badge&logo=fastAPI" alt="Python" /></td>
-        </tr>
-        <tr>
-          <td>Frontend</td>
-          <td><img src="https://img.shields.io/badge/sveltekit-1.23-ff3e00?style=for-the-badge&logo=svelte" alt="Sveltekit" /></td>
-        </tr>
-        <tr>
-          <td>Database</td>
-          <td><img src="https://img.shields.io/badge/postgresql-15.4-336791?style=for-the-badge&logo=postgresql" alt="PostgreSQL" /></td>
-        </tr>
-      </table>
-      <table align="right">
-        <tr>
-          <th>Component</th>
-          <th>Tech Stack</th>
-        </tr>
-        <tr>
-          <td>Containerization</td>
-          <td><img src="https://img.shields.io/badge/docker-24.0-2496ED?style=for-the-badge&logo=docker" alt="Docker" /></td>
-        </tr>
-        <tr>
-          <td>Orchestration</td>
-          <td><img src="https://img.shields.io/badge/kubernetes-1.27-326CE5?style=for-the-badge&logo=kubernetes" alt="Kubernetes" /></td>
-        </tr>
-        <tr>
-          <td>Message Queue</td>
-          <td><img src="https://img.shields.io/badge/rabbitmq-3.12-FF6600?style=for-the-badge&logo=rabbitmq" alt="RabbitMQ" /></td>
-        </tr>
-        <tr>
-          <td>Cache</td>
-          <td><img src="https://img.shields.io/badge/redis-7.2-DC382D?style=for-the-badge&logo=redis" alt="Redis" /></td>
-        </tr>
-      </table>
-    </td>
+    <table>
+      <tr>
+        <th>Component</th>
+        <th>Tech Stack</th>
+        <th>Component</th>
+        <th>Tech Stack</th>
+      </tr>
+      <tr>
+        <td>Ingestion</td>
+        <td><img src="https://img.shields.io/badge/python-3.11-yellow?style=for-the-badge&logo=python&logoColor=yellow" alt="Python" /></td>
+        <td>Containerization</td>
+        <td align=right><img src="https://img.shields.io/badge/docker-24.0-2496ED?style=for-the-badge&logo=docker" alt="Docker" /></td>
+      </tr>
+      <tr>
+        <td>Backend</td>
+        <td><img src="https://img.shields.io/badge/FastAPI-0.101-009688?style=for-the-badge&logo=fastAPI" alt="FastAPI" /></td>
+        <td>Orchestration</td>
+        <td align=right><img src="https://img.shields.io/badge/kubernetes-1.27-326CE5?style=for-the-badge&logo=kubernetes" alt="Kubernetes" /></td>
+      </tr>
+      <tr>
+        <td>Frontend</td>
+        <td><img src="https://img.shields.io/badge/sveltekit-1.23-ff3e00?style=for-the-badge&logo=svelte" alt="Sveltekit" /></td>
+        <td>Message Queue</td>
+        <td align=right><img src="https://img.shields.io/badge/rabbitmq-3.12-FF6600?style=for-the-badge&logo=rabbitmq" alt="RabbitMQ" /></td>
+      </tr>
+      <tr>
+        <td>Database</td>
+        <td><img src="https://img.shields.io/badge/postgresql-15.4-336791?style=for-the-badge&logo=postgresql" alt="PostgreSQL" /></td>
+        <td>Cache</td>
+        <td align=right><img src="https://img.shields.io/badge/redis-7.2-DC382D?style=for-the-badge&logo=redis" alt="Redis" /></td>
+      </tr>
+    </table>
   </tr>
 </table>
 
