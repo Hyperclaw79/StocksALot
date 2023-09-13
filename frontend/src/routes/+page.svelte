@@ -2,6 +2,7 @@
     import Latest from "$lib/components/latest/latest.svelte";
     import Insights from "$lib/components/timeline/insights.svelte";
     import MoversComponent from "$lib/components/movers/movers.svelte";
+    import Hero from "$lib/components/hero.svelte";
 
     type dataProp = {
         insights: InsightsResponse;
@@ -114,6 +115,7 @@
     @component
     The main component which holds together the different sections of the page.  
  -->
+<Hero />
 <section id="latest">
     <Latest data={data.latest} />
 </section>
@@ -123,7 +125,7 @@
 <section id="movers">
     <MoversComponent data={data.movers} />
 </section>
-<section id="historyCharts">
+<section id="charts" data-disabled={true}>
     <h2>Next Section coming soon...</h2>
 </section>
 
@@ -135,6 +137,7 @@
         --bgColor: rgba(30, 30, 30);
         --accent-color: rgb(225, 225, 225);
         --line-color: rgb(45, 45, 45);
+        scroll-behavior: smooth;
     }
 
     *,

@@ -162,6 +162,7 @@
     }
 
     .stocks {
+        position: relative;
         max-height: 90vh;
         overflow-y: auto;
         overflow-x: hidden;
