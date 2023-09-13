@@ -37,6 +37,7 @@
     const refreshData = async () => {
         if (loadStage === 0) {
             loadStage = 1;
+            await Notification.requestPermission();
         }
         let latest, movers, insights;
         if ((loadStage <= 1 && data.latest.count == 0) || loadStage > 1) {
@@ -53,6 +54,16 @@
         }
         if ((latest?.count || 0) > 0 && (movers?.count || 0) > 0 && (insights?.count || 0) > 0) {
             loadStage = 2;
+        }
+        if (loadStage === 2) {
+            if (Notification.permission !== "denied") {
+                const notification = new Notification("StocksALot", {
+                    body: "Check out the latest updates on StocksALot!"
+                });
+                notification.onclick = () => {
+                    window.focus();
+                };
+            }
         }
         // Recursive call to refresh data
         _timeout = setTimeout(async () => {
