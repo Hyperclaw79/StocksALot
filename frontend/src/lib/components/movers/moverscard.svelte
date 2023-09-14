@@ -42,17 +42,31 @@
 -->
 <div class="card">
     <div class="card-header">
-        <img class="card-logo" src={data.profile.logo} alt={data.profile.ticker} />
+        <img
+            class="card-logo"
+            class:dummy={data.profile.ticker === ""}
+            src={data.profile.logo}
+            alt={data.profile.ticker}
+        />
         <div>
             <div class="card-title">
-                <a href={data.profile.website} target="_blank" rel="noopener noreferrer">
-                    {data.profile.name}
+                <a
+                    href={data.profile.website}
+                    class:dummy={data.profile.ticker === ""}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    {data.profile.name || "Company Name"}
                 </a>
             </div>
             <div class="card-subtitle">
-                <span>{data.profile.ticker} - {data.profile.country}</span>
+                <span class:dummy={data.profile.ticker === ""}
+                    >{data.profile.ticker || "Ticker"} - {data.profile.country || "US"}</span
+                >
                 {#if data.profile.exchange}
                     @ {data.profile.exchange}
+                {:else if data.profile.ticker === ""}
+                    <span class="dummy">@ Exchange</span>
                 {/if}
             </div>
         </div>
@@ -80,7 +94,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.current_metrics.open)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.current_metrics.open)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.high > 0}
@@ -93,7 +109,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.current_metrics.high)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.current_metrics.high)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.low > 0}
@@ -106,7 +124,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.current_metrics.low)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.current_metrics.low)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.close > 0}
@@ -119,7 +139,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.current_metrics.close)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.current_metrics.close)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.volume > 0}
@@ -132,7 +154,9 @@
                         </td>
                     {:else}
                         <td>
-                            {data.current_metrics.volume.toLocaleString()}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{data.current_metrics.volume.toLocaleString()}</span
+                            >
                         </td>
                     {/if}
                 </tr>
@@ -147,7 +171,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.metric_deltas.open)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.metric_deltas.open)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.high > 0}
@@ -160,7 +186,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.metric_deltas.high)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.metric_deltas.high)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.low > 0}
@@ -173,7 +201,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.metric_deltas.low)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.metric_deltas.low)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.close > 0}
@@ -186,7 +216,9 @@
                         </td>
                     {:else}
                         <td>
-                            {formatter.format(data.metric_deltas.close)}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{formatter.format(data.metric_deltas.close)}</span
+                            >
                         </td>
                     {/if}
                     {#if data.metric_deltas.volume > 0}
@@ -199,7 +231,9 @@
                         </td>
                     {:else}
                         <td>
-                            {data.metric_deltas.volume.toLocaleString()}
+                            <span class:dummy={data.profile.ticker === ""}
+                                >{data.metric_deltas.volume.toLocaleString()}</span
+                            >
                         </td>
                     {/if}
                 </tr>
@@ -213,28 +247,28 @@
                 <p>{data.profile.industry}</p>
             {/if}
         </div>
-        <hr />
+        <hr class:dummy={data.profile.ticker === ""} />
         <div class="info">
             {#if data.profile.market_cap}
                 <p>💰 Market Cap</p>
                 <p>{formatter.format(data.profile.market_cap)}</p>
             {/if}
         </div>
-        <hr />
+        <hr class:dummy={data.profile.ticker === ""} />
         <div class="info">
             {#if data.profile.num_shares}
                 <p>📰 Outstanding Shares</p>
                 <p>{data.profile.num_shares.toLocaleString()}</p>
             {/if}
         </div>
-        <hr />
+        <hr class:dummy={data.profile.ticker === ""} />
         <div class="info">
             {#if data.profile.phone}
                 <p>📞 Phone</p>
                 <p>{data.profile.phone}</p>
             {/if}
         </div>
-        <hr />
+        <hr class:dummy={data.profile.ticker === ""} />
     </div>
 </div>
 
@@ -381,5 +415,21 @@
     .card:hover .card-details {
         display: grid;
         opacity: 1;
+    }
+
+    .dummy {
+        animation: loading 2s ease-in-out infinite;
+    }
+
+    @keyframes loading {
+        0% {
+            filter: blur(2px);
+        }
+        50% {
+            filter: blur(0);
+        }
+        100% {
+            filter: blur(2px);
+        }
     }
 </style>

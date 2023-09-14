@@ -21,9 +21,15 @@
 -->
 <h2>Top Market Movers</h2>
 <div>
-    {#each data.items as item (item.profile.ticker)}
-        <MoversCard data={item} />
-    {/each}
+    {#if data.count > 0}
+        {#each data.items as item (item.profile.ticker)}
+            <MoversCard data={item} />
+        {/each}
+    {:else}
+        {#each { length: 10 } as _}
+            <MoversCard />
+        {/each}
+    {/if}
 </div>
 
 <style>
