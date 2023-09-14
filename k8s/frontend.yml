@@ -19,7 +19,7 @@ spec:
       containers:
       - name: frontend
         image: "ghcr.io/hyperclaw79/stocksalot-frontend:latest"
-        imagePullPolicy: "IfNotPresent"
+        imagePullPolicy: "Always"
         env:
           - name: DB_SERVER_HOST
             value: "db-server-service"

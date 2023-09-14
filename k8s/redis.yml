@@ -16,7 +16,7 @@ spec:
       containers:
       - name: redis
         image: redis/redis-stack-server:latest
-        imagePullPolicy: "IfNotPresent"
+        imagePullPolicy: "Always"
         ports:
           - containerPort: 6379
         volumeMounts:

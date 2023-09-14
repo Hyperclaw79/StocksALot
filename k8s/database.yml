@@ -18,7 +18,7 @@ spec:
       containers:
       - name: database
         image: postgres:latest
-        imagePullPolicy: "IfNotPresent"
+        imagePullPolicy: "Always"
         envFrom:
           - secretRef:
               name: db-secrets

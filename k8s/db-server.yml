@@ -20,7 +20,7 @@ spec:
       containers:
       - name: db-server
         image: "ghcr.io/hyperclaw79/stocksalot-db-server:latest"
-        imagePullPolicy: "IfNotPresent"
+        imagePullPolicy: "Always"
         envFrom:
           - secretRef:
               name: db-server-secrets

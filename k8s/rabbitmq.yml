@@ -16,7 +16,7 @@ spec:
       containers:
       - name: rabbitmq
         image: rabbitmq:alpine
-        imagePullPolicy: "IfNotPresent"
+        imagePullPolicy: "Always"
         envFrom:
           - secretRef:
               name: rabbitmq-secrets
