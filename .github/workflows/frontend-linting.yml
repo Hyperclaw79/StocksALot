@@ -1,15 +1,15 @@
 # This workflow will install Python dependencies and run linting.
 
-name: Linting
+name: Linting (Frontend)
 
 on:
     push:
         paths:
-            - frontend
+            - frontend/**
             - .github/workflows/frontend-linting.yml
     pull_request:
         paths:
-            - frontend
+            - frontend/**
             - .github/workflows/frontend-linting.yml
     workflow_dispatch:
 

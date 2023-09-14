@@ -9,6 +9,8 @@ on:
         paths-ignore:
             - "README.md"
             - "assets/**"
+            - ".github/**"
+            - "!.github/workflows/build.yml"
 
 permissions:
     id-token: write

@@ -1,6 +1,6 @@
 # This workflow will install Python dependencies and run linting.
 
-name: Linting
+name: Linting (Backend)
 
 on:
     push:
