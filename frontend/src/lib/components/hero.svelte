@@ -40,7 +40,7 @@
         left: 0;
         bottom: 0;
         right: 0;
-        background: url("stocks-bg.jpg");
+        background: url("/stocks-bg.jpg");
         background-size: contain;
         background-position: center;
         filter: blur(2px);
