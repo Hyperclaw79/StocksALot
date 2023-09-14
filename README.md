@@ -68,17 +68,26 @@ StocksALot is a cutting edge PoC for Stock Market Analysis employing OpenAI's GP
 
 ![Preview](assets/stocksalot_preview.gif)
 
-* The backend is powered by FastAPI serving the multiple roles:
-  * Communication with a PostgreSQL database
-  * Interacting with OpenAI's GPT models to infer insights from the OHLC data
-  * Authenticator for external API access
-* The lightweight Frontend is written in TypeScript and compiled by Sveltekit.
-* The data ingestion component is written in pure Python and work asynchronously as Cronjobs.
-* For seamless communication between data ingestion and data storage, a RabbitMQ message broker is employed.
-* To prevent excessive API calls, a Redis cache is used to store the OHLC data for faster retrieval.
-* The entire application is containerized using Docker and orchestrated using Kubernetes.
+### Highlights
+
+- Watch the Latest Ohlc Values of Top 50 US Stocks
+- Get AI Powered Insights on the latest data
+- Track the Latest Market Movers
+- More Features Coming Soon....
 
 ## 📐 High Level System Design
+
+> **Overview**
+> 
+> * The backend is powered by FastAPI serving the multiple roles:
+>   * Communication with a PostgreSQL database
+>   * Interacting with OpenAI's GPT models to infer insights from the OHLC data
+>   * Authenticator for external API access
+> * The lightweight Frontend is written in TypeScript and compiled by Sveltekit.
+> * The data ingestion component is written in pure Python and work asynchronously as Cronjobs.
+> * For seamless communication between data ingestion and data storage, a RabbitMQ message broker is employed.
+> * To prevent excessive API calls, a Redis cache is used to store the OHLC data for faster retrieval.
+> * The entire application is containerized using Docker and orchestrated using Kubernetes.
 
 ### 1. Data Ingestion (Ingestor)
 The Data Ingestion component is responsible for extracting OHLC data for the top 50 US stocks at hourly intervals. This is achieved through scheduled cron jobs. The extracted data is then formatted and forwarded to the RabbitMQ message queue for further processing.
