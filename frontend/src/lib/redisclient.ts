@@ -105,7 +105,7 @@ class RedisClient {
             const [keyResponse, expireResponse] = (await this.client
                 .multi()
                 .json.set(key, "$", data)
-                .expire(key, 3600)
+                .expireAt(key, Math.floor(Date.now() / 1000) + 3600)
                 .exec()) as [string, boolean];
             if (keyResponse !== "OK" || expireResponse !== true) {
                 logger.warn(`Failed to cache data for key: ${key}`);
