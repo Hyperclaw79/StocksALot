@@ -62,3 +62,8 @@ def fetch_password(pwd_name: str, default: str = None) -> str:
         with open(pwd_file, encoding='utf-8') as password_file:
             return password_file.read().strip()
     return default
+
+
+def dedent(string: str) -> str:
+    """Dedent a string."""
+    return "\n".join([line.strip() for line in string.splitlines()])

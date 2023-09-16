@@ -250,20 +250,20 @@ class DatabaseConnection(BaseConnector):
                             ELSE 0
                         END AS volume_delta
                         FROM history
-                ), top10 AS
+                ), top5 AS
                 (
                     SELECT ticker
                     FROM change_calc
                     ORDER BY abs(change_ratio) DESC
-                    LIMIT 10
+                    LIMIT 5
                 )
                 SELECT
                     {ohlc}.datetime, {ohlc}.ticker, {ohlc}.name,
                     {ohlc}.open, {ohlc}.high, {ohlc}.low, {ohlc}.close,
                     {ohlc}.volume
                 FROM {ohlc}
-                JOIN top10
-                    ON {ohlc}.ticker = top10.ticker
+                JOIN top5
+                    ON {ohlc}.ticker = top5.ticker
                 JOIN dates
                     ON {ohlc}.datetime = dates.datetime
                 ORDER BY datetime DESC;

@@ -12,7 +12,6 @@ import pytest
 from database.dbconn import DatabaseConnection
 from database.gpt_client import GptClient
 from database.k8s_authorizer import KubernetesAPI
-from database.models import InsightsResponse
 
 
 def extract_sql(sql: Composed | SQL | Identifier | str) -> list:
@@ -333,41 +332,33 @@ def db_conn() -> type[DatabaseConnection]:
 
 @pytest.fixture
 def gpt_client_fixture() -> type[GptClient]:
-    with patch('openai.ChatCompletion') as mock_chat_completion:
-        class MockChatCompletion:
-            class MockChoice:
-                def __init__(self, message):
-                    self.message = message
-            def __init__(self, *args, **kwargs):
-                self.choices = [MockChatCompletion.MockChoice("test")]
-            @classmethod
-            async def acreate(cls, *args, **kwargs):
-                return cls(*args, **kwargs)
-            async def prompt(self, *args, **kwargs):
-                return InsightsResponse(**{
-                    "count": 1,
-                    "items": [
+    with patch.object(
+        GptClient,
+        '_send_prompt',
+        AsyncMock(return_value={
+            "count": 1,
+            "items": [
+                {
+                    "datetime": "2021-01-01T09:30:00",
+                    "insights": [
                         {
-                            "datetime": "2021-01-01T09:30:00",
-                            "insights": [
-                                {
-                                    "message": "test insight 4",
-                                    "sentiment": "neutral"
-                                },
-                                {
-                                    "message": "test insight 5",
-                                    "sentiment": "positive"
-                                },
-                                {
-                                    "message": "test insight 6",
-                                    "sentiment": "negative"
-                                }
-                            ]
+                            "message": "test insight 4",
+                            "sentiment": "neutral"
+                        },
+                        {
+                            "message": "test insight 5",
+                            "sentiment": "positive"
+                        },
+                        {
+                            "message": "test insight 6",
+                            "sentiment": "negative"
                         }
                     ]
-                })
-        mock_chat_completion.return_value = MockChatCompletion
-        yield MockChatCompletion
+                }
+            ]
+        })
+    ):
+        yield GptClient
 
 
 @pytest.fixture
