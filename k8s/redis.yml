@@ -71,7 +71,7 @@ kind: CronJob
 metadata:
   name: curl-frontend-cronjob
 spec:
-  schedule: "10 */1 * * *"
+  schedule: "0 */1 * * *"
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
