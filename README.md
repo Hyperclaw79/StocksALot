@@ -350,15 +350,9 @@ kubectl exec -it database-statefulset-0 -- psql -U postgres -d stocks -c "SELECT
 ### 🎉 And that's it! You have successfully setup StocksALot in your local Kubernetes cluster.
 
 ## 👥 Contributing
-This project is a simple PoC and is not actively maintained.\
-However, if you would like to contribute, feel free to open a pull request.
 
-### Ways to contribute
-Here are some ways in which you can contribute, in ascending order of preference:
-- [ ] Report a bug
-- [ ] Fix an existing bug
-- [ ] Improve test coverage
-- [ ] Improve documentation
-- [ ] Enhance Frontend
-- [ ] Add new features
-- [ ] Refactor code
+Please read [CONTRIBUTING.md](/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+
+## 📜 License
+
+This project is licensed under the BSD-3-Clause License - see the [LICENSE](/LICENSE) file for details.

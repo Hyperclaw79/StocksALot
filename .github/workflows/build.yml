@@ -8,8 +8,13 @@ on:
         branches:
             - main
         paths-ignore:
-            - "README.md"
             - "assets/**"
+            - ".github/**"
+            - "README.md"
+            - "CODE_OF_CONDUCT.md"
+            - "CONTRIBUTING.md"
+            - "LICENSE"
+            - "SECURITY.md"
 
 permissions:
     id-token: write

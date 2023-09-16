@@ -1,0 +1,41 @@
+name: Feature Request
+description: Request a new feature
+title: "[Feature Request]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to request a new feature!
+  - type: textarea
+    id: what-feature
+    attributes:
+      label: What feature would you like to request?
+      description: Please describe the feature you would like to see added to the project.
+      placeholder: "I would like to see a feature that..."
+    validations:
+      required: true
+  - type: textarea
+    id: why-feature
+    attributes:
+      label: Why do you think this feature would be useful?
+      description: Please explain why you think this feature would be useful to the project.
+      placeholder: "This feature would be useful because..."
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: What priority should this feature have?
+      options:
+        - Low
+        - Medium
+        - High
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/Hyperclaw79/StocksALot/CODE_OF_CONDUCT.md).
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

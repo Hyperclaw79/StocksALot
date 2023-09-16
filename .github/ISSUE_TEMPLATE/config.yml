@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community Discussions
+    url: https://github.com/Hyperclaw79/StocksALot/discussions
+    about: Please ask and answer questions here.
+  - name: Security Bug Bounty
+    url: https://mailxto.com/6wjdozbi2y
+    about: Please report security vulnerabilities here.
+  - name: Code of Conduct Violation
+    url: https://mailxto.com/n5d13a4ph7
+    about: Please report COC violations here.

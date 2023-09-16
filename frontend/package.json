@@ -6,7 +6,7 @@
         "email": "harshith.thota7@gmail.com",
         "url": "https://ht-dev.vercel.app"
     },
-    "license": "MIT",
+    "license": "BSD-3-Clause",
     "private": true,
     "scripts": {
         "dev": "vite dev",
