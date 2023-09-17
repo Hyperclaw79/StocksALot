@@ -17,14 +17,14 @@ class GptClient:  # pylint: disable=too-few-public-methods
     """
     A client for interacting with the OpenAI GPT API.
     """
+    insights_pattern = re.compile(
+        r'(\s\(Sentiment:\s(Positive|Neutral|Negative)\))',
+        flags=re.IGNORECASE
+    )
 
     def __init__(self, api_key: str, model: str = MODEL):
         openai.api_key = api_key
         self.model = model
-        self.insights_pattern = re.compile(
-            r'\d+\.\s(.*?)(?:\((positive|neutral|negative) sentiment\))',
-            flags=re.IGNORECASE
-        )
         self.last_prompted_datetime = None
         # pylint: disable=line-too-long
         self.behavior_instruction = dedent("""You are a stock market expert, capable of quickly analysing trends and outliers in stock data.
@@ -62,6 +62,7 @@ class GptClient:  # pylint: disable=too-few-public-methods
         logger.info("Sending prompt to GPT API for insights.")
         try:
             response = await self._send_prompt(messages)
+            self.clean_insights(response["items"])
         except Exception as exc:  # pylint: disable=broad-except
             logger.error("Failed to get insights from GPT API.")
             logger.error(exc)
@@ -70,7 +71,9 @@ class GptClient:  # pylint: disable=too-few-public-methods
         self.cached_insights = InsightsResponse(**response)
         return InsightsResponse(**response)
 
-    async def _send_prompt(self, messages: list[Message]) -> dict:
+    async def _send_prompt(self, messages: list[Message]) -> dict[
+        str, int | list[dict[str, str | list[str]]]
+    ]:
         """Sends a prompt to the OpenAI GPT API and returns the response."""
         func_response = await openai.ChatCompletion.acreate(
             model=self.model,
@@ -94,3 +97,11 @@ class GptClient:  # pylint: disable=too-few-public-methods
         for item in response["items"]:
             del item["insights"][5:]
         return response
+
+    @classmethod
+    def clean_insights(cls, insights: list[dict[str, str | list[dict[str, str]]]]):
+        """Cleans the insights by removing the sentiment and other noise."""
+        for record in insights:
+            for insight in record["insights"]:
+                message = insight.pop("message", None) or insight.pop("insight", None)
+                insight["message"] = cls.insights_pattern.sub("", message)
