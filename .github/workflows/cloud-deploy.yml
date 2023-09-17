@@ -96,6 +96,11 @@ jobs:
                   kubectl create secret tls stocksalot-tls \
                       --key=stocksalot-tls.key \
                       --cert=stocksalot-tls.crt
+                  echo "${{ secrets.API_STOCKSALOT_TLS_KEY }}" > api-stocksalot-tls.key
+                  echo "${{ secrets.API_STOCKSALOT_TLS_CERT }}" > api-stocksalot-tls.crt
+                  kubectl create secret tls api-stocksalot-tls \
+                      --key=api-stocksalot-tls.key \
+                      --cert=api-stocksalot-tls.crt
 
             - name: Apply Kubernetes Manifests
               run: |

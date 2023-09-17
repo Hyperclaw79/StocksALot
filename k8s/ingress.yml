@@ -13,9 +13,11 @@ metadata:
 spec:
   tls:
     - hosts:
-        - stocksalot.tech
-        - api.stocksalot.tech
+      - stocksalot.tech
       secretName: stocksalot-tls
+    - hosts:
+      - api.stocksalot.tech
+      secretName: api-stocksalot-tls
   rules:
   - host: api.stocksalot.tech
     http:
