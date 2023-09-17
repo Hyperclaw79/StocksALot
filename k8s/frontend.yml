@@ -29,11 +29,13 @@ spec:
           - containerPort: 4173
         resources:
           limits:
-            cpu: "0.5"
+            cpu: "250m"
             memory: "512Mi"
+            ephemeral-storage: "100Mi"
           requests:
-            cpu: "0.25"
-            memory: "256Mi"
+            cpu: "250m"
+            memory: "512Mi"
+            ephemeral-storage: "100Mi"
 
 ---
 

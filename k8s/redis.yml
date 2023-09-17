@@ -24,11 +24,13 @@ spec:
             mountPath: /var/lib/redis/
         resources:
           limits:
-            cpu: "0.5"
-            memory: "256Mi"
+            cpu: "250m"
+            memory: "512Mi"
+            ephemeral-storage: "200Mi"
           requests:
-            cpu: "0.25"
-            memory: "128Mi"
+            cpu: "250m"
+            memory: "512Mi"
+            ephemeral-storage: "200Mi"
       volumes:
         - name: redis-data
           persistentVolumeClaim:
@@ -84,10 +86,12 @@ spec:
             command: ["curl", "frontend-service"]
             resources:
               limits:
-                cpu: "0.5"
+                cpu: "250m"
                 memory: "512Mi"
+                ephemeral-storage: "10Mi"
               requests:
-                cpu: "0.25"
-                memory: "256Mi"
+                cpu: "250m"
+                memory: "512Mi"
+                ephemeral-storage: "10Mi"
           restartPolicy: Never
   concurrencyPolicy: Forbid
