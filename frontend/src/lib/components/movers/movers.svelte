@@ -45,4 +45,17 @@
         flex-wrap: wrap;
         gap: 2rem;
     }
+
+    @media (max-width: 1200px) {
+        div {
+            flex-direction: column;
+            align-items: center;
+        }
+    }
+
+    @media (max-width: 640px) {
+        div {
+            gap: 0;
+        }
+    }
 </style>

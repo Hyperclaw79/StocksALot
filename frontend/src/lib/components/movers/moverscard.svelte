@@ -432,4 +432,79 @@
             filter: blur(2px);
         }
     }
+
+    /* Media Queries */
+    @media (max-width: 1200px) {
+        .card {
+            width: 80vw;
+            padding: 1rem;
+            border-radius: 0;
+            max-height: 100%;
+        }
+
+        .card tr:nth-child(even) {
+            display: table-row;
+        }
+
+        .card .card-header {
+            width: 100%;
+            justify-content: center;
+            gap: 2rem;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 1);
+        }
+
+        .card .card-title {
+            font-size: 2.5vw;
+        }
+
+        .card .card-subtitle {
+            font-size: 1.5vw;
+        }
+
+        .card .card-details {
+            display: grid;
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .card {
+            width: 90vw;
+            padding: 0;
+        }
+
+        .card .card-logo {
+            width: 40px;
+            height: 40px;
+            margin-right: 8px;
+        }
+
+        .card .card-title {
+            font-size: 4vw;
+        }
+
+        .card .card-subtitle {
+            font-size: 3vw;
+        }
+
+        .card .current-metrics th {
+            font-size: 3vw;
+        }
+
+        .card .current-metrics td {
+            font-size: 2.8vw;
+        }
+
+        .card .card-details {
+            padding: 0.5rem;
+        }
+
+        .card .card-details .info p:first-child {
+            font-size: 3vw;
+        }
+
+        .card .card-details .info p:last-child {
+            font-size: 2.8vw;
+        }
+    }
 </style>
