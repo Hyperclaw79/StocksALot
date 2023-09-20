@@ -149,4 +149,27 @@
             grid-row: 2/4;
         }
     }
+
+    @media (max-width: 1200px) {
+        ul {
+            grid-template-columns: 1fr;
+            grid-auto-rows: min-content;
+            row-gap: var(--row-gap);
+            padding: 0;
+        }
+        ul::before {
+            grid-column: 1;
+            grid-row: 1;
+        }
+        ul li {
+            padding: 0;
+        }
+        ul li:nth-child(odd) {
+            grid-column: 1;
+        }
+
+        ul li:nth-child(even) {
+            grid-column: 1;
+        }
+    }
 </style>

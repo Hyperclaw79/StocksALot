@@ -21,7 +21,10 @@
         <TimelineCard data={data} />
 -->
 <div class="timelinecard">
-    <div class="date" class:odd={isOdd}>{data.datetime}</div>
+    <div class="date" class:odd={isOdd}>
+        <div class="alt-triangle" />
+        {data.datetime}
+    </div>
     <div class="insights">
         {#each data.insights as insight}
             <p style="color: {colorMap[insight.sentiment]}">
@@ -49,6 +52,8 @@
         position: relative;
 
         border-radius: calc(var(--dateH) / 2) 0 0 calc(var(--dateH) / 2);
+
+        z-index: 5;
     }
 
     .date::before {
@@ -91,6 +96,10 @@
         border-radius: 0 calc(var(--dateH) / 2) calc(var(--dateH) / 2) 0;
     }
 
+    .date .alt-triangle {
+        display: none;
+    }
+
     .insights {
         background: var(--bgColor);
         filter: brightness(0.8);
@@ -99,6 +108,9 @@
         padding-block-start: 1.5rem;
         padding-block-end: 1.5rem;
         font-weight: 300;
+        outline: 1px solid var(--accent-color);
+        z-index: 4;
+        filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 1));
     }
 
     .insights::before {
@@ -116,5 +128,33 @@
     .insights::before {
         z-index: -1;
         bottom: 0.25rem;
+    }
+
+    @media (max-width: 1200px) {
+        .date,
+        .date.odd {
+            border-radius: 0;
+        }
+        .date .alt-triangle {
+            display: block;
+            position: absolute;
+            width: 0;
+            height: 0;
+            opacity: 75%;
+            border-top: 1.5rem solid transparent;
+            border-bottom: 1.5rem solid transparent;
+            border-right: 1.5rem solid var(--accent-color);
+            left: 0;
+            top: 50%;
+        }
+        .date.odd .alt-triangle {
+            left: auto;
+            right: 0;
+            border-right: none;
+            border-left: 1.5rem solid var(--accent-color);
+        }
+        .date::after {
+            display: none;
+        }
     }
 </style>
