@@ -30,6 +30,8 @@
         currency: "USD"
     });
 
+    let innerWidth: number;
+
     // Reactive Statement to update the price change colors
     $: data.items.forEach((item) => {
         item.colors = item.colors ?? {
@@ -76,82 +78,97 @@
         <Latest data={data} />
 -->
 <h2>Latest Stock Data</h2>
+{#if innerWidth <= 1200 && data.items.length > 0}
+    <caption>Recorded on <code><big>{prettyDateTime(data.items[0].datetime)}</big></code></caption>
+{/if}
+<svelte:window bind:innerWidth />
 <div class="stocks">
     <p class="tbl" style="display: {data.count > 0 ? 'none' : 'block'};">Fetching Data...</p>
-    <table>
-        <thead>
-            <tr>
-                <th>Datetime</th>
-                <th>Ticker</th>
-                <th>Company</th>
-                <th class="numeric">Open</th>
-                <th class="numeric">High</th>
-                <th class="numeric">Low</th>
-                <th class="numeric">Close</th>
-                <th class="numeric">Volume</th>
-            </tr>
-        </thead>
-        <tbody>
-            {#each data.items as item}
-                {#if item.datetime}
-                    <tr>
-                        <td>{prettyDateTime(item.datetime)}</td>
-                        <td>{item.ticker}</td>
-                        <td>{item.company}</td>
-                        <td style="color: {item.colors?.open};" class="numeric">
-                            {#if item.colors?.open === priceChangeColors[0]}
-                                &#9650;
-                            {:else if item.colors?.open === priceChangeColors[1]}
-                                &#9660;
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    {#if innerWidth > 1200}
+                        <th>Datetime</th>
+                        <th>Ticker</th>
+                    {/if}
+                    <th>Company</th>
+                    <th class="numeric">Open</th>
+                    <th class="numeric">High</th>
+                    <th class="numeric">Low</th>
+                    <th class="numeric">Close</th>
+                    <th class="numeric">Volume</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#each data.items as item}
+                    {#if item.datetime}
+                        <tr>
+                            {#if innerWidth > 1200}
+                                <td>{prettyDateTime(item.datetime)}</td>
+                                <td>{item.ticker}</td>
                             {/if}
-                            {formatter.format(item.open)}
-                        </td>
-                        <td style="color: {item.colors?.high};" class="numeric">
-                            {#if item.colors?.high === priceChangeColors[0]}
-                                &#9650;
-                            {:else if item.colors?.high === priceChangeColors[1]}
-                                &#9660;
-                            {/if}
-                            {formatter.format(item.high)}
-                        </td>
-                        <td style="color: {item.colors?.low};" class="numeric">
-                            {#if item.colors?.low === priceChangeColors[0]}
-                                &#9650;
-                            {:else if item.colors?.low === priceChangeColors[1]}
-                                &#9660;
-                            {/if}
-                            {formatter.format(item.low)}
-                        </td>
-                        <td style="color: {item.colors?.close};" class="numeric">
-                            {#if item.colors?.close === priceChangeColors[0]}
-                                &#9650;
-                            {:else if item.colors?.close === priceChangeColors[1]}
-                                &#9660;
-                            {/if}
-                            {formatter.format(item.close)}
-                        </td>
-                        <td style="color: {item.colors?.volume};" class="numeric">
-                            {item.volume?.toLocaleString()}
-                        </td>
-                    </tr>
+                            <td>
+                                {item.company}
+                                {#if innerWidth <= 1200}
+                                    (<code>{item.ticker}</code>)
+                                {/if}
+                            </td>
+                            <td style="color: {item.colors?.open};" class="numeric">
+                                {#if item.colors?.open === priceChangeColors[0]}
+                                    &#9650;
+                                {:else if item.colors?.open === priceChangeColors[1]}
+                                    &#9660;
+                                {/if}
+                                {formatter.format(item.open)}
+                            </td>
+                            <td style="color: {item.colors?.high};" class="numeric">
+                                {#if item.colors?.high === priceChangeColors[0]}
+                                    &#9650;
+                                {:else if item.colors?.high === priceChangeColors[1]}
+                                    &#9660;
+                                {/if}
+                                {formatter.format(item.high)}
+                            </td>
+                            <td style="color: {item.colors?.low};" class="numeric">
+                                {#if item.colors?.low === priceChangeColors[0]}
+                                    &#9650;
+                                {:else if item.colors?.low === priceChangeColors[1]}
+                                    &#9660;
+                                {/if}
+                                {formatter.format(item.low)}
+                            </td>
+                            <td style="color: {item.colors?.close};" class="numeric">
+                                {#if item.colors?.close === priceChangeColors[0]}
+                                    &#9650;
+                                {:else if item.colors?.close === priceChangeColors[1]}
+                                    &#9660;
+                                {/if}
+                                {formatter.format(item.close)}
+                            </td>
+                            <td style="color: {item.colors?.volume};" class="numeric">
+                                {item.volume?.toLocaleString()}
+                            </td>
+                        </tr>
+                    {:else}
+                        <tr class="loading">
+                            {#each { length: 8 } as _}
+                                <td />
+                            {/each}
+                        </tr>
+                    {/if}
                 {:else}
-                    <tr class="loading">
-                        {#each { length: 8 } as _}
-                            <td />
-                        {/each}
-                    </tr>
-                {/if}
-            {:else}
-                {#each { length: 50 } as _}
-                    <tr class="loading">
-                        {#each { length: 8 } as _}
-                            <td />
-                        {/each}
-                    </tr>
+                    {#each { length: 50 } as _}
+                        <tr class="loading">
+                            {#each { length: 8 } as _}
+                                <td />
+                            {/each}
+                        </tr>
+                    {/each}
                 {/each}
-            {/each}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <style>
@@ -204,11 +221,13 @@
         color: var(--accent-color);
     }
 
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
     table {
         width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        border: 1px solid #ddd;
+        border-collapse: collapse;
     }
 
     thead {
@@ -255,6 +274,54 @@
         }
         100% {
             opacity: 1;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        table {
+            font-size: 80%; /* Reduce font size for smaller screens */
+        }
+
+        th,
+        td,
+        tr {
+            padding: 8px; /* Reduce cell padding for smaller screens */
+        }
+
+        th {
+            font-size: 90%; /* Reduce header font size for smaller screens */
+        }
+
+        .stocks p {
+            font-size: 1.5rem; /* Reduce fetching data message font size for smaller screens */
+        }
+
+        .stocks td:first-child,
+        .stocks th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 9;
+            outline: 2px solid #ddd;
+        }
+
+        .stocks td:first-child::before,
+        .stocks th:first-child::before {
+            content: " ";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            outline: 2px solid #ddd;
+            box-shadow: 2px 0px 4px 2px black;
+        }
+
+        .stocks td:first-child {
+            background-color: var(--bgColor);
+        }
+
+        .stocks tr:nth-child(even) td:first-child {
+            background-color: #f2f2f2;
         }
     }
 </style>
