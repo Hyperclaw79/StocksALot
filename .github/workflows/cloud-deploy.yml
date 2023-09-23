@@ -104,5 +104,5 @@ jobs:
 
             - name: Apply Kubernetes Manifests
               run: |
-                  kubectl apply -f k8s
+                  kubectl apply -f k8s | grep -v unchanged
                   kubectl rollout restart deploy
