@@ -19,11 +19,21 @@ export const GET = async (): Promise<Response> => {
         if (insights.length === 0) {
             return json(data);
         } else if (data.length === 0) {
-            // Sort by datetime in descending order
-            data = insights.sort((a, b) => (a.datetime < b.datetime ? 1 : -1));
+            // Sort by datetime in descending order and filter records for the latest date part of the datetime.
+            data = insights
+                .sort((a, b) => (a.datetime < b.datetime ? 1 : -1))
+                .filter((item, _, self) => {
+                    const date = item.datetime.split("T")[0];
+                    return self.findIndex((t) => t.datetime.split("T")[0] === date) === 0;
+                });
         } else {
-            // Merge the two arrays and sort by datetime in descending order
-            const temp = [...insights, ...data].sort((a, b) => (a.datetime < b.datetime ? 1 : -1));
+            // Merge the two arrays and sort by datetime in descending order.
+            const temp = [...insights, ...data]
+                .sort((a, b) => (a.datetime < b.datetime ? 1 : -1))
+                .filter((item, index, self) => {
+                    const date = item.datetime.split("T")[0];
+                    return index === self.findIndex((t) => t.datetime.split("T")[0] === date);
+                });
             const prev = data.sort((a, b) => (a.datetime < b.datetime ? 1 : -1));
             if (temp !== prev) {
                 data = temp;
