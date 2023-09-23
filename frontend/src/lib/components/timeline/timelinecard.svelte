@@ -7,6 +7,24 @@
         negative: "#e22525",
         neutral: "#2577e2"
     };
+
+    /**
+     * Returns a pretty date time string.
+     * @param {string} date
+     * @returns {string} A pretty date time string.
+     */
+    const prettyDateTime = (date: string): string => {
+        const d = new Date(date);
+        const day = d.getDate();
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+        const hour = d.getHours();
+        const minute = d.getMinutes();
+        const ampm = hour >= 12 ? "PM" : "AM";
+        const formattedHour = hour % 12;
+        const formattedMinute = minute < 10 ? `0${minute}` : minute;
+        return `${day}/${month}/${year} ${formattedHour}:${formattedMinute} ${ampm}`;
+    };
 </script>
 
 <!--
@@ -23,7 +41,7 @@
 <div class="timelinecard">
     <div class="date" class:odd={isOdd}>
         <div class="alt-triangle" />
-        {data.datetime}
+        {prettyDateTime(data.datetime)}
     </div>
     <div class="insights">
         {#each data.insights as insight}
