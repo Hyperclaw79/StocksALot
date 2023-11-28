@@ -4,7 +4,7 @@ pytest_mock==3.11.1
 pytest_asyncio==0.21.1
 httpx==0.24.1
 fastapi==0.101.1
-aiohttp==3.8.5
+aiohttp==3.9.0
 aio_pika==9.2.2
 psycopg[binary]
 uvicorn[standard]
